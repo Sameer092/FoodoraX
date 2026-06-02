@@ -4,13 +4,7 @@
     "slug": "foodorax",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FF6B35"
-    },
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": false,
@@ -26,10 +20,6 @@
       }
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FF6B35"
-      },
       "package": "com.foodorax.app",
       "permissions": [
         "android.permission.ACCESS_FINE_LOCATION",
@@ -48,17 +38,12 @@
         }
       }
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
+    "web": {},
     "plugins": [
       [
         "expo-notifications",
         {
-          "icon": "./assets/notification-icon.png",
-          "color": "#FF6B35",
-          "sounds": ["./assets/notification-sound.wav"],
-          "mode": "production"
+          "color": "#FF6B35"
         }
       ],
       [
@@ -70,7 +55,6 @@
           "isAndroidForegroundServiceEnabled": true
         }
       ],
-      "expo-secure-store",
       "expo-font",
       [
         "expo-image-picker",
@@ -79,13 +63,8 @@
           "cameraPermission": "The app accesses your camera to take photos."
         }
       ],
-      "@stripe/stripe-react-native"
+      "expo-secure-store"
     ],
-    "extra": {
-      "eas": {
-        "projectId": "your-eas-project-id"
-      }
-    },
     "scheme": "foodorax"
   }
 }

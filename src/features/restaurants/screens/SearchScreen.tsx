@@ -71,12 +71,12 @@ export function SearchScreen() {
             onPress={() => setActiveCuisine(item === 'All' ? undefined : item)}
             style={[
               styles.filterChip,
-              activeCuisine === item || (item === 'All' && !activeCuisine) && styles.filterChipActive,
+              (activeCuisine === item || (item === 'All' && !activeCuisine)) && styles.filterChipActive,
             ]}
           >
             <Text style={[
               styles.filterText,
-              activeCuisine === item || (item === 'All' && !activeCuisine) && styles.filterTextActive,
+              (activeCuisine === item || (item === 'All' && !activeCuisine)) && styles.filterTextActive,
             ]}>{item}</Text>
           </TouchableOpacity>
         )}

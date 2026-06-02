@@ -29,7 +29,7 @@ const schema = z.object({
 });
 type SignUpForm = z.infer<typeof schema>;
 
-const ROLES: { value: UserRole; label: string; icon: string; description: string }[] = [
+const ROLES: { value: 'customer' | 'restaurant_owner' | 'rider'; label: string; icon: string; description: string }[] = [
   { value: 'customer', label: 'Customer', icon: 'person-outline', description: 'Order food from restaurants' },
   { value: 'restaurant_owner', label: 'Restaurant', icon: 'restaurant-outline', description: 'Manage your restaurant' },
   { value: 'rider', label: 'Rider', icon: 'bicycle-outline', description: 'Deliver orders' },
@@ -49,14 +49,24 @@ export function SignUpScreen() {
   const onSubmit = async (data: SignUpForm) => {
     setLoading(true);
     try {
-      await authService.signUp({
+      const result = await authService.signUp({
         email: data.email,
         password: data.password,
         full_name: data.full_name,
         phone: data.phone,
         role: data.role as UserRole,
       });
-      Alert.alert('Account Created!', 'Please check your email to verify your account.');
+      // If email confirmation is OFF in Supabase, user is logged in immediately
+      // If email confirmation is ON, show message
+      if (result.session) {
+        // Already logged in — navigator will redirect automatically
+      } else {
+        Alert.alert(
+          '✅ Account Created!',
+          'Please check your email and click the confirmation link, then sign in.',
+          [{ text: 'Go to Login', onPress: () => navigation.navigate('Login') }]
+        );
+      }
     } catch (e: any) {
       Alert.alert('Sign Up Failed', e.message ?? 'Please try again.');
     } finally {

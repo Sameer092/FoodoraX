@@ -8,20 +8,40 @@ import { authService } from '@services/auth.service';
 import { useAuthStore } from '@store/auth.store';
 import { Colors } from '@constants/colors';
 
-const MENU_ITEMS = [
-  { icon: 'person-outline',    label: 'Edit Profile',         route: 'EditProfile' },
-  { icon: 'location-outline',  label: 'Saved Addresses',      route: 'AddAddress' },
-  { icon: 'notifications-outline', label: 'Notifications',   route: 'Notifications' },
-  { icon: 'heart-outline',     label: 'Favorites',            route: 'Favorites' },
-  { icon: 'card-outline',      label: 'Payment Methods',      route: null },
-  { icon: 'help-circle-outline', label: 'Help & Support',     route: null },
-  { icon: 'shield-outline',    label: 'Privacy Policy',       route: null },
-  { icon: 'document-outline',  label: 'Terms of Service',     route: null },
-] as const;
+interface MenuItem {
+  icon: string;
+  label: string;
+  route?: string;
+  customerOnly?: boolean;
+}
+
+const MENU_ITEMS: MenuItem[] = [
+  { icon: 'person-outline',        label: 'Edit Profile',     route: 'EditProfile' },
+  { icon: 'location-outline',      label: 'Saved Addresses',  route: 'AddAddress' },
+  { icon: 'notifications-outline', label: 'Notifications',    route: 'Notifications' },
+  { icon: 'heart-outline',         label: 'Favorites',        route: 'Favorites', customerOnly: true },
+  { icon: 'card-outline',          label: 'Payment Methods' },
+  { icon: 'help-circle-outline',   label: 'Help & Support' },
+  { icon: 'shield-outline',        label: 'Privacy Policy' },
+  { icon: 'document-outline',      label: 'Terms of Service' },
+];
 
 export function ProfileScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuthStore();
+
+  // Only show customer-only items (e.g. Favorites) to customers
+  const menuItems = MENU_ITEMS.filter(
+    (item) => !item.customerOnly || user?.role === 'customer'
+  );
+
+  const handleMenuPress = (item: MenuItem) => {
+    if (!item.route) {
+      Alert.alert(item.label, 'This feature is coming soon! 🚀');
+      return;
+    }
+    navigation.navigate(item.route);
+  };
 
   const handleLogout = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -84,11 +104,11 @@ export function ProfileScreen() {
 
         {/* Menu */}
         <View style={styles.menu}>
-          {MENU_ITEMS.map((item, i) => (
+          {menuItems.map((item, i) => (
             <TouchableOpacity
               key={item.label}
-              style={[styles.menuItem, i === MENU_ITEMS.length - 1 && styles.menuItemLast]}
-              onPress={() => item.route && navigation.navigate(item.route as any)}
+              style={[styles.menuItem, i === menuItems.length - 1 && styles.menuItemLast]}
+              onPress={() => handleMenuPress(item)}
             >
               <View style={styles.menuIcon}>
                 <Ionicons name={item.icon as any} size={20} color={Colors.primary[500]} />

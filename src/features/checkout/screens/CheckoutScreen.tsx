@@ -5,12 +5,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useStripe } from '@stripe/stripe-react-native';
 import { useCartStore } from '@store/cart.store';
 import { useAppStore } from '@store/app.store';
 import { useAuthStore } from '@store/auth.store';
 import { useCreateOrder } from '@hooks/useOrders';
-import { paymentService } from '@services/payment.service';
 import { Button } from '@components/common/Button';
 import { Colors } from '@constants/colors';
 import { Config } from '@constants/config';
@@ -24,19 +22,18 @@ const PAYMENT_METHODS = [
 
 export function CheckoutScreen() {
   const navigation = useNavigation<any>();
-  const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const { user } = useAuthStore();
   const { selectedAddress } = useAppStore();
   const {
-    localItems, cart, getSubtotal, getTax, getTotal, discountAmount, promoCode,
+    localItems, restaurant, getSubtotal, getTax, getTotal, getDeliveryFee, discountAmount, promoCode,
   } = useCartStore();
 
-  const [paymentMethod, setPaymentMethod] = useState<string>('card');
+  const [paymentMethod, setPaymentMethod] = useState<string>('cash');
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [loading, setLoading] = useState(false);
 
   const createOrder = useCreateOrder();
-  const deliveryFee = cart?.restaurant?.delivery_fee ?? 0;
+  const deliveryFee = getDeliveryFee();
   const subtotal = getSubtotal();
 
   const handlePlaceOrder = async () => {
@@ -45,43 +42,19 @@ export function CheckoutScreen() {
       navigation.navigate('AddAddress');
       return;
     }
-    if (!localItems.length || !cart?.restaurant_id) {
+    if (!localItems.length || !restaurant?.id) {
       Alert.alert('Empty Cart', 'Please add items to your cart.');
       return;
     }
 
     setLoading(true);
     try {
-      if (paymentMethod === 'card') {
-        const paymentSheetData = await paymentService.createPaymentIntent({
-          orderId: 'pending',
-          amount: Math.round(getTotal() * 100),
-          currency: 'usd',
-        });
-
-        const { error: initError } = await initPaymentSheet({
-          merchantDisplayName: 'FoodoraX',
-          customerId: paymentSheetData.customer,
-          customerEphemeralKeySecret: paymentSheetData.ephemeralKey,
-          paymentIntentClientSecret: paymentSheetData.paymentIntent,
-          defaultBillingDetails: { name: user?.full_name },
-        });
-        if (initError) throw new Error(initError.message);
-
-        const { error: presentError } = await presentPaymentSheet();
-        if (presentError) {
-          if (presentError.code !== 'Canceled') throw new Error(presentError.message);
-          setLoading(false);
-          return;
-        }
-      }
-
       const order = await createOrder.mutateAsync({
         customerId: user!.id,
-        restaurantId: cart!.restaurant_id,
+        restaurantId: restaurant.id,
         cartItems: localItems.map((i) => ({
           id: i.id,
-          cart_id: cart!.id ?? '',
+          cart_id: '',
           menu_item_id: i.menuItem.id,
           quantity: i.quantity,
           unit_price: i.menuItem.price,

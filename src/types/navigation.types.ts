@@ -48,6 +48,9 @@ export type RestaurantOwnerStackParamList = {
   EditRestaurant: { restaurantId: string };
   Analytics: { restaurantId: string };
   Profile: undefined;
+  EditProfile: undefined;
+  AddAddress: { editId?: string };
+  Notifications: undefined;
 };
 
 // ─── Rider Stack ───────────────────────────────────────────────
@@ -57,6 +60,9 @@ export type RiderStackParamList = {
   ActiveDelivery: { orderId: string };
   EarningsHistory: undefined;
   RiderProfile: undefined;
+  EditProfile: undefined;
+  AddAddress: { editId?: string };
+  Notifications: undefined;
 };
 
 // ─── Root Stack ────────────────────────────────────────────────

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { notificationService } from '@services/notification.service';
+import { supabase } from '@services/supabase';
 import { useAuthStore } from '@store/auth.store';
 import { useAppStore } from '@store/app.store';
 import type { Notification } from '@types/index';
@@ -26,9 +27,9 @@ export function useNotifications() {
     if (!user) return;
     const channel = notificationService.subscribeToNotifications(user.id, (n: Notification) => {
       queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
-      setUnreadNotifications((prev: number) => prev + 1);
+      setUnreadNotifications(useAppStore.getState().unreadNotifications + 1);
     });
-    return () => { channel.unsubscribe(); };
+    return () => { supabase.removeChannel(channel); };
   }, [user, queryClient, setUnreadNotifications]);
 
   useEffect(() => {

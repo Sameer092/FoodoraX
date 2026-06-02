@@ -175,19 +175,24 @@ export const orderService = {
   },
 
   subscribeToOrder(orderId: string, callback: (order: Order) => void) {
-    return supabase
-      .channel(`order-${orderId}`)
+    const name = `order-${orderId}`;
+    removeStaleChannel(name);
+    const channel = supabase.channel(name);
+    channel
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` },
         (payload) => callback(payload.new as Order)
       )
       .subscribe();
+    return channel;
   },
 
   subscribeToRestaurantOrders(restaurantId: string, callback: (order: Order) => void) {
-    return supabase
-      .channel(`restaurant-orders-${restaurantId}`)
+    const name = `restaurant-orders-${restaurantId}`;
+    removeStaleChannel(name);
+    const channel = supabase.channel(name);
+    channel
       .on(
         'postgres_changes',
         {
@@ -197,5 +202,15 @@ export const orderService = {
         (payload) => callback(payload.new as Order)
       )
       .subscribe();
+    return channel;
   },
 };
+
+// Removes any existing channel with the same name so we never call
+// .on() on an already-subscribed channel (which Supabase forbids).
+function removeStaleChannel(name: string) {
+  supabase
+    .getChannels()
+    .filter((c) => c.topic === `realtime:${name}`)
+    .forEach((c) => supabase.removeChannel(c));
+}

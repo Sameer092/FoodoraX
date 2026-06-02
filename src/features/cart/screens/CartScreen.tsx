@@ -19,14 +19,14 @@ export function CartScreen() {
   const {
     localItems, updateLocalQuantity, removeLocalItem,
     promoCode, setPromoCode, discountAmount, setDiscountAmount,
-    getSubtotal, getTax, getTotal, cart,
+    getSubtotal, getTax, getTotal, getDeliveryFee, restaurant,
   } = useCartStore();
 
   const [promoInput, setPromoInput] = useState('');
   const [promoLoading, setPromoLoading] = useState(false);
   const [promoError, setPromoError] = useState('');
 
-  const deliveryFee = cart?.restaurant?.delivery_fee ?? 0;
+  const deliveryFee = getDeliveryFee();
   const subtotal = getSubtotal();
 
   const applyPromo = async () => {
@@ -88,10 +88,10 @@ export function CartScreen() {
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Restaurant info */}
-        {cart?.restaurant && (
+        {restaurant && (
           <View style={styles.restaurantRow}>
-            <Image source={{ uri: cart.restaurant.logo_url ?? '' }} style={styles.restaurantLogo} contentFit="cover" />
-            <Text style={styles.restaurantName}>{cart.restaurant.name}</Text>
+            <Image source={{ uri: restaurant.logo_url ?? '' }} style={styles.restaurantLogo} contentFit="cover" />
+            <Text style={styles.restaurantName}>{restaurant.name}</Text>
           </View>
         )}
 

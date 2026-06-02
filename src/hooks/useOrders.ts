@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { orderService, CreateOrderPayload } from '@services/order.service';
+import { supabase } from '@services/supabase';
 import { useAuthStore } from '@store/auth.store';
 import type { OrderStatus } from '@types/index';
 
@@ -20,7 +21,7 @@ export function useCustomerOrders() {
     queryFn: ({ pageParam = 0 }) =>
       orderService.getCustomerOrders(user!.id, pageParam as number),
     initialPageParam: 0,
-    getNextPageParam: (last) => (last.hasMore ? last.page + 1 : undefined),
+    getNextPageParam: (last, allPages) => (last.hasMore ? allPages.length : undefined),
     enabled: !!user,
     staleTime: 30 * 1000,
   });
@@ -44,7 +45,7 @@ export function useOrderWithRealtime(orderId: string) {
     const channel = orderService.subscribeToOrder(orderId, (updated) => {
       queryClient.setQueryData(orderKeys.detail(orderId), updated);
     });
-    return () => { channel.unsubscribe(); };
+    return () => { supabase.removeChannel(channel); };
   }, [orderId, queryClient]);
 
   return query;
@@ -65,7 +66,7 @@ export function useRestaurantOrders(restaurantId: string) {
     const channel = orderService.subscribeToRestaurantOrders(restaurantId, () => {
       queryClient.invalidateQueries({ queryKey: orderKeys.restaurant(restaurantId) });
     });
-    return () => { channel.unsubscribe(); };
+    return () => { supabase.removeChannel(channel); };
   }, [restaurantId, queryClient]);
 
   return query;

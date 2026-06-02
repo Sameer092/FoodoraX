@@ -1,47 +1,49 @@
 import { useEffect } from 'react';
 import { useAuthStore } from '@store/auth.store';
 import { authService } from '@services/auth.service';
-import { notificationService } from '@services/notification.service';
 
 export function useAuth() {
-  const { user, isLoading, isAuthenticated, setUser, setLoading, logout } = useAuthStore();
+  const { user, isLoading, isAuthenticated, setUser, logout } = useAuthStore();
 
   useEffect(() => {
-    const init = async () => {
+    let mounted = true;
+
+    // 1) Proactive initial session check — guarantees isLoading becomes false
+    (async () => {
       try {
         const session = await authService.getSession();
+        if (!mounted) return;
         if (session) {
           const currentUser = await authService.getCurrentUser();
-          setUser(currentUser);
-
-          const pushToken = await notificationService.registerForPushNotifications();
-          if (pushToken && currentUser) {
-            await authService.updatePushToken(currentUser.id, pushToken);
-          }
+          if (mounted) setUser(currentUser);
         } else {
-          setUser(null);
+          if (mounted) setUser(null);
         }
       } catch {
-        setUser(null);
+        if (mounted) setUser(null);
       }
-    };
+    })();
 
-    init();
-
+    // 2) React to future auth changes (login/logout/signup)
     const { data: { subscription } } = authService.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        const currentUser = await authService.getCurrentUser();
-        setUser(currentUser);
+      if (!mounted) return;
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
+        try {
+          const currentUser = await authService.getCurrentUser();
+          if (mounted) setUser(currentUser);
+        } catch {
+          if (mounted) setUser(null);
+        }
       } else if (event === 'SIGNED_OUT') {
-        logout();
-      } else if (event === 'TOKEN_REFRESHED' && session) {
-        const currentUser = await authService.getCurrentUser();
-        setUser(currentUser);
+        if (mounted) logout();
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, [setUser, setLoading, logout]);
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [setUser, logout]);
 
   return { user, isLoading, isAuthenticated };
 }

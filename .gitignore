@@ -1,0 +1,91 @@
+# ─────────────────────────────────────────────
+# Dependencies
+# ─────────────────────────────────────────────
+node_modules/
+.pnp/
+.pnp.js
+.yarn/
+
+# ─────────────────────────────────────────────
+# Environment & Secrets (NEVER commit these)
+# ─────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.json
+google-services.json
+GoogleService-Info.plist
+
+# ─────────────────────────────────────────────
+# Expo
+# ─────────────────────────────────────────────
+.expo/
+.expo-shared/
+dist/
+web-build/
+
+# ─────────────────────────────────────────────
+# Native builds
+# ─────────────────────────────────────────────
+android/
+ios/
+*.apk
+*.aab
+*.ipa
+*.app
+
+# ─────────────────────────────────────────────
+# Metro / bundler
+# ─────────────────────────────────────────────
+.metro-health-check*
+.metro-cache/
+
+# ─────────────────────────────────────────────
+# Logs & debug
+# ─────────────────────────────────────────────
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+logs/
+
+# ─────────────────────────────────────────────
+# Testing & coverage
+# ─────────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ─────────────────────────────────────────────
+# TypeScript
+# ─────────────────────────────────────────────
+*.tsbuildinfo
+
+# ─────────────────────────────────────────────
+# macOS / Editor
+# ─────────────────────────────────────────────
+.DS_Store
+*.pem
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ─────────────────────────────────────────────
+# Supabase (local CLI artifacts — keep migrations!)
+# ─────────────────────────────────────────────
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+
+# ─────────────────────────────────────────────
+# EAS / Fastlane
+# ─────────────────────────────────────────────
+ios/fastlane/report.xml
+ios/fastlane/Preview.html
+ios/fastlane/screenshots
+android/fastlane/report.xml
+android/fastlane/Preview.html
+android/fastlane/screenshots

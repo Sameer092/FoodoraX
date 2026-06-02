@@ -127,8 +127,12 @@ export const notificationService = {
   },
 
   subscribeToNotifications(userId: string, callback: (n: Notification) => void) {
-    return supabase
-      .channel(`notifications-${userId}`)
+    const name = `notifications-${userId}`;
+    supabase.getChannels()
+      .filter((c) => c.topic === `realtime:${name}`)
+      .forEach((c) => supabase.removeChannel(c));
+    const channel = supabase.channel(name);
+    channel
       .on(
         'postgres_changes',
         {
@@ -138,6 +142,7 @@ export const notificationService = {
         (payload) => callback(payload.new as Notification)
       )
       .subscribe();
+    return channel;
   },
 
   addNotificationResponseListener(

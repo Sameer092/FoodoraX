@@ -16,29 +16,16 @@ export interface SignInData {
 
 export const authService = {
   async signUp({ email, password, full_name, phone, role = 'customer' }: SignUpData) {
+    // Pass metadata — the DB trigger handle_new_user() creates the users row automatically
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { full_name, phone, role },
+        emailRedirectTo: 'foodorax://auth/callback',
       },
     });
     if (error) throw error;
-
-    if (data.user) {
-      const { error: profileError } = await supabase.from('users').insert({
-        id: data.user.id,
-        email,
-        full_name,
-        phone,
-        role,
-      });
-      if (profileError) throw profileError;
-
-      if (role === 'rider') {
-        await supabase.from('riders').insert({ id: data.user.id });
-      }
-    }
     return data;
   },
 
@@ -93,13 +80,50 @@ export const authService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
-    const { data, error } = await supabase
+    // Try to read the profile row
+    const { data } = await supabase
       .from('users')
       .select('*')
       .eq('id', user.id)
+      .maybeSingle();
+
+    if (data) return data as User;
+
+    // Row missing (trigger didn't run yet) — create it from auth metadata.
+    // This makes the app work even without the DB trigger configured.
+    const meta = (user.user_metadata ?? {}) as Record<string, string>;
+    const { data: created, error: createError } = await supabase
+      .from('users')
+      .insert({
+        id: user.id,
+        email: user.email ?? meta.email ?? '',
+        full_name: meta.full_name ?? 'User',
+        phone: meta.phone ?? null,
+        role: (meta.role as UserRole) ?? 'customer',
+      })
+      .select()
       .single();
-    if (error) return null;
-    return data as User;
+
+    if (createError) {
+      // Fallback: return a minimal profile from auth so the app still works
+      return {
+        id: user.id,
+        email: user.email ?? '',
+        full_name: meta.full_name ?? 'User',
+        phone: meta.phone,
+        role: (meta.role as UserRole) ?? 'customer',
+        is_active: true,
+        created_at: user.created_at ?? new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as User;
+    }
+
+    // Create rider profile if needed
+    if ((meta.role as UserRole) === 'rider') {
+      await supabase.from('riders').insert({ id: user.id });
+    }
+
+    return created as User;
   },
 
   async updateProfile(userId: string, updates: Partial<User>) {

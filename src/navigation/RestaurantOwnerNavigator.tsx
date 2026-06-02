@@ -11,6 +11,9 @@ import { CreateRestaurantScreen } from '@features/restaurant-management/screens/
 import { AnalyticsScreen } from '@features/restaurant-management/screens/AnalyticsScreen';
 import { OwnerProfileScreen } from '@features/profile/screens/OwnerProfileScreen';
 import { OrderDetailScreen } from '@features/orders/screens/OrderDetailScreen';
+import { EditProfileScreen } from '@features/profile/screens/EditProfileScreen';
+import { AddAddressScreen } from '@features/profile/screens/AddAddressScreen';
+import { NotificationsScreen } from '@features/notifications/screens/NotificationsScreen';
 
 const Stack = createNativeStackNavigator<RestaurantOwnerStackParamList>();
 
@@ -27,6 +30,10 @@ export function RestaurantOwnerNavigator() {
       <Stack.Screen name="CreateRestaurant" component={CreateRestaurantScreen} />
       <Stack.Screen name="Analytics" component={AnalyticsScreen} />
       <Stack.Screen name="Profile" component={OwnerProfileScreen} />
+      {/* Shared profile screens */}
+      <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+      <Stack.Screen name="AddAddress" component={AddAddressScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
     </Stack.Navigator>
   );
 }

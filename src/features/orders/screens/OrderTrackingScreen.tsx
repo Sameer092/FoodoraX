@@ -3,10 +3,12 @@ import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated as RNAni
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Polyline } from 'react-native-maps';
+// PROVIDER_GOOGLE removed — using default provider (free, no API key needed for dev)
 import { Image } from 'expo-image';
 import { useOrderWithRealtime } from '@hooks/useOrders';
 import { locationService } from '@services/location.service';
+import { supabase } from '@services/supabase';
 import { OrderStatusBadge } from '@components/order/OrderStatusBadge';
 import { Colors } from '@constants/colors';
 import type { RiderLocation, OrderStatus } from '@types/index';
@@ -46,7 +48,7 @@ export function OrderTrackingScreen() {
         latitudeDelta: 0.02, longitudeDelta: 0.02,
       });
     });
-    return () => { channel.unsubscribe(); };
+    return () => { supabase.removeChannel(channel); };
   }, [order?.rider_id]);
 
   const statusMsg = STATUS_MESSAGES[order?.status ?? 'pending'];
@@ -57,7 +59,6 @@ export function OrderTrackingScreen() {
       {/* Map */}
       <MapView
         ref={mapRef}
-        provider={PROVIDER_GOOGLE}
         style={styles.map}
         initialRegion={{
           latitude: riderLocation?.latitude ?? order?.delivery_address?.latitude ?? 25.2048,

@@ -58,7 +58,7 @@ export function useRestaurantReviews(restaurantId: string) {
     queryFn: ({ pageParam = 0 }) =>
       restaurantService.getReviews(restaurantId, pageParam as number),
     initialPageParam: 0,
-    getNextPageParam: (last) => (last.hasMore ? last.page + 1 : undefined),
+    getNextPageParam: (last, allPages) => (last.hasMore ? allPages.length : undefined),
     enabled: !!restaurantId,
   });
 }
@@ -103,7 +103,7 @@ export function useUpdateMenuItem() {
     mutationFn: ({ id, ...updates }: Partial<MenuItem> & { id: string }) =>
       restaurantService.updateMenuItem(id, updates),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: restaurantKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: restaurantKeys.all });
     },
   });
 }
@@ -113,7 +113,7 @@ export function useDeleteMenuItem() {
   return useMutation({
     mutationFn: (id: string) => restaurantService.deleteMenuItem(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: restaurantKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: restaurantKeys.all });
     },
   });
 }

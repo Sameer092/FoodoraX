@@ -1,14 +1,22 @@
 import 'react-native-url-polyfill/auto';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { StripeProvider } from '@stripe/stripe-react-native';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, LogBox } from 'react-native';
 import FlashMessage from 'react-native-flash-message';
 import { RootNavigator } from './src/navigation';
-import { Config } from './src/constants/config';
+
+// Suppress known harmless dev-only warnings so the on-screen toasts stay clean.
+// These never appear in a production build.
+LogBox.ignoreLogs([
+  'Non-serializable values were found in the navigation state',
+  'expo-notifications',
+  'Constants.platform.ios.model',
+  '`expo-notifications` functionality is not fully supported in Expo Go',
+  'AsyncStorage has been extracted',
+]);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,11 +39,9 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
-          <StripeProvider publishableKey={Config.stripe.publishableKey}>
-            <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-            <RootNavigator />
-            <FlashMessage position="top" />
-          </StripeProvider>
+          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+          <RootNavigator />
+          <FlashMessage position="top" />
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

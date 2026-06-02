@@ -61,8 +61,12 @@ export const locationService = {
   },
 
   subscribeToRiderLocation(riderId: string, callback: (loc: RiderLocation) => void) {
-    return supabase
-      .channel(`rider-location-${riderId}`)
+    const name = `rider-location-${riderId}`;
+    supabase.getChannels()
+      .filter((c) => c.topic === `realtime:${name}`)
+      .forEach((c) => supabase.removeChannel(c));
+    const channel = supabase.channel(name);
+    channel
       .on(
         'postgres_changes',
         {
@@ -72,6 +76,7 @@ export const locationService = {
         (payload) => callback(payload.new as RiderLocation)
       )
       .subscribe();
+    return channel;
   },
 
   startLocationTracking(

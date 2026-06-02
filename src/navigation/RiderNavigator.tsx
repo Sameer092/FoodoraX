@@ -5,6 +5,9 @@ import { RiderDashboardScreen } from '@features/rider/screens/RiderDashboardScre
 import { ActiveDeliveryScreen } from '@features/rider/screens/ActiveDeliveryScreen';
 import { EarningsScreen } from '@features/rider/screens/EarningsScreen';
 import { RiderProfileScreen } from '@features/rider/screens/RiderProfileScreen';
+import { EditProfileScreen } from '@features/profile/screens/EditProfileScreen';
+import { AddAddressScreen } from '@features/profile/screens/AddAddressScreen';
+import { NotificationsScreen } from '@features/notifications/screens/NotificationsScreen';
 
 const Stack = createNativeStackNavigator<RiderStackParamList>();
 
@@ -15,6 +18,10 @@ export function RiderNavigator() {
       <Stack.Screen name="ActiveDelivery" component={ActiveDeliveryScreen} />
       <Stack.Screen name="EarningsHistory" component={EarningsScreen} />
       <Stack.Screen name="RiderProfile" component={RiderProfileScreen} />
+      {/* Shared profile screens */}
+      <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+      <Stack.Screen name="AddAddress" component={AddAddressScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
     </Stack.Navigator>
   );
 }

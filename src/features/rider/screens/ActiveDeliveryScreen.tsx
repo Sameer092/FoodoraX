@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, Linking, Alert } from 'react-
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker } from 'react-native-maps';
+// PROVIDER_GOOGLE removed — using default provider (free, no API key needed for dev)
 import { useOrderWithRealtime, useUpdateOrderStatus } from '@hooks/useOrders';
 import { useRiderLocationTracking } from '@hooks/useLocation';
 import { useAuthStore } from '@store/auth.store';
@@ -56,7 +57,6 @@ export function ActiveDeliveryScreen() {
     <View style={styles.container}>
       <MapView
         ref={mapRef}
-        provider={PROVIDER_GOOGLE}
         style={styles.map}
         initialRegion={{
           latitude: order?.restaurant?.latitude ?? 25.2,

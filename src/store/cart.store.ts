@@ -1,29 +1,8 @@
 import { create } from 'zustand';
 import { subscribeWithSelector, persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { Cart, CartItem, MenuItem, Restaurant, PromoCode } from '@types/index';
+import type { MenuItem, Restaurant, PromoCode } from '@types/index';
 import { Config } from '@constants/config';
-
-interface CartState {
-  cart: Cart | null;
-  localItems: LocalCartItem[];
-  promoCode: PromoCode | null;
-  discountAmount: number;
-
-  setCart: (cart: Cart | null) => void;
-  addLocalItem: (item: MenuItem, restaurant: Restaurant) => void;
-  updateLocalQuantity: (itemId: string, quantity: number) => void;
-  removeLocalItem: (itemId: string) => void;
-  setPromoCode: (promo: PromoCode | null) => void;
-  setDiscountAmount: (amount: number) => void;
-  clearCart: () => void;
-
-  // Computed
-  getSubtotal: () => number;
-  getTax: () => number;
-  getTotal: () => number;
-  getItemCount: () => number;
-}
 
 export interface LocalCartItem {
   id: string;
@@ -32,16 +11,35 @@ export interface LocalCartItem {
   notes?: string;
 }
 
+interface CartState {
+  restaurant: Restaurant | null;
+  localItems: LocalCartItem[];
+  promoCode: PromoCode | null;
+  discountAmount: number;
+
+  addLocalItem: (item: MenuItem, restaurant: Restaurant) => void;
+  updateLocalQuantity: (itemId: string, quantity: number) => void;
+  removeLocalItem: (itemId: string) => void;
+  setPromoCode: (promo: PromoCode | null) => void;
+  setDiscountAmount: (amount: number) => void;
+  clearCart: () => void;
+
+  // Computed
+  getDeliveryFee: () => number;
+  getSubtotal: () => number;
+  getTax: () => number;
+  getTotal: () => number;
+  getItemCount: () => number;
+}
+
 export const useCartStore = create<CartState>()(
   subscribeWithSelector(
     persist(
       (set, get) => ({
-        cart: null,
+        restaurant: null,
         localItems: [],
         promoCode: null,
         discountAmount: 0,
-
-        setCart: (cart) => set({ cart }),
 
         addLocalItem: (item, restaurant) => {
           const { localItems } = get();
@@ -49,25 +47,23 @@ export const useCartStore = create<CartState>()(
 
           if (existing) {
             set({
+              restaurant,
               localItems: localItems.map((i) =>
-                i.menuItem.id === item.id
-                  ? { ...i, quantity: i.quantity + 1 }
-                  : i
+                i.menuItem.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
               ),
             });
           } else {
             set({
-              localItems: [
-                ...localItems,
-                { id: item.id, menuItem: item, quantity: 1 },
-              ],
+              restaurant,
+              localItems: [...localItems, { id: item.id, menuItem: item, quantity: 1 }],
             });
           }
         },
 
         updateLocalQuantity: (itemId, quantity) => {
           if (quantity <= 0) {
-            set({ localItems: get().localItems.filter((i) => i.id !== itemId) });
+            const remaining = get().localItems.filter((i) => i.id !== itemId);
+            set({ localItems: remaining, restaurant: remaining.length ? get().restaurant : null });
           } else {
             set({
               localItems: get().localItems.map((i) =>
@@ -77,31 +73,29 @@ export const useCartStore = create<CartState>()(
           }
         },
 
-        removeLocalItem: (itemId) =>
-          set({ localItems: get().localItems.filter((i) => i.id !== itemId) }),
+        removeLocalItem: (itemId) => {
+          const remaining = get().localItems.filter((i) => i.id !== itemId);
+          set({ localItems: remaining, restaurant: remaining.length ? get().restaurant : null });
+        },
 
         setPromoCode: (promoCode) => set({ promoCode }),
         setDiscountAmount: (discountAmount) => set({ discountAmount }),
 
         clearCart: () =>
-          set({ cart: null, localItems: [], promoCode: null, discountAmount: 0 }),
+          set({ restaurant: null, localItems: [], promoCode: null, discountAmount: 0 }),
 
-        getSubtotal: () => {
-          const { localItems } = get();
-          return localItems.reduce(
-            (sum, item) => sum + item.menuItem.price * item.quantity,
-            0
-          );
-        },
+        getDeliveryFee: () => get().restaurant?.delivery_fee ?? 0,
+
+        getSubtotal: () =>
+          get().localItems.reduce((sum, item) => sum + item.menuItem.price * item.quantity, 0),
 
         getTax: () => get().getSubtotal() * Config.app.taxRate,
 
         getTotal: () => {
-          const { cart, discountAmount } = get();
           const sub = get().getSubtotal();
           const tax = get().getTax();
-          const delivery = cart?.restaurant?.delivery_fee ?? 0;
-          return sub + tax + delivery - discountAmount;
+          const delivery = get().getDeliveryFee();
+          return Math.max(0, sub + tax + delivery - get().discountAmount);
         },
 
         getItemCount: () =>
@@ -111,6 +105,7 @@ export const useCartStore = create<CartState>()(
         name: 'foodorax-cart',
         storage: createJSONStorage(() => AsyncStorage),
         partialize: (state) => ({
+          restaurant: state.restaurant,
           localItems: state.localItems,
           promoCode: state.promoCode,
           discountAmount: state.discountAmount,
