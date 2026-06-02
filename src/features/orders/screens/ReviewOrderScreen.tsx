@@ -53,11 +53,16 @@ export function ReviewOrderScreen() {
         comment,
       });
       queryClient.invalidateQueries({ queryKey: ['restaurants', 'reviews', order.restaurant_id] });
+      queryClient.invalidateQueries({ queryKey: ['order-review', orderId] });
+      queryClient.invalidateQueries({ queryKey: ['profile-stats'] });
       Alert.alert('Thank you!', 'Your review has been submitted.', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (e: any) {
-      Alert.alert('Error', e.message ?? 'Failed to submit review');
+      const msg = e.code === '23505' || /duplicate|unique/i.test(e.message ?? '')
+        ? 'You have already reviewed this order.'
+        : (e.message ?? 'Failed to submit review');
+      Alert.alert('Notice', msg, [{ text: 'OK', onPress: () => navigation.goBack() }]);
     } finally {
       setLoading(false);
     }

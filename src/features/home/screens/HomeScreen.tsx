@@ -15,7 +15,9 @@ import Animated, {
 import { BlurView } from 'expo-blur';
 import { useFeaturedRestaurants, useRestaurants, useToggleFavorite, useFavorites } from '@hooks/useRestaurants';
 import { useLocation } from '@hooks/useLocation';
+import { useCustomerOrders } from '@hooks/useOrders';
 import { useAuthStore } from '@store/auth.store';
+import { OrderStatusBadge } from '@components/order/OrderStatusBadge';
 import { RestaurantCard } from '@components/restaurant/RestaurantCard';
 import { RestaurantCardSkeleton } from '@components/common/SkeletonLoader';
 import { Colors } from '@constants/colors';
@@ -59,6 +61,12 @@ export function HomeScreen() {
 
   const allRestaurants = allPages?.pages.flatMap((p) => p.data) ?? [];
   const favoriteIds = new Set(favorites?.map((f) => f.restaurant_id) ?? []);
+
+  // Find an in-progress order to surface a live "track your order" banner
+  const { data: ordersData } = useCustomerOrders();
+  const activeOrder = ordersData?.pages
+    .flatMap((p) => p.data)
+    .find((o) => !['delivered', 'cancelled', 'refunded'].includes(o.status));
 
   const scrollHandler = useAnimatedScrollHandler({ onScroll: (e) => { scrollY.value = e.contentOffset.y; } });
 
@@ -138,6 +146,28 @@ export function HomeScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary[500]} />
         }
       >
+        {/* Active order banner */}
+        {activeOrder && (
+          <TouchableOpacity
+            style={styles.activeOrderBanner}
+            activeOpacity={0.9}
+            onPress={() => navigation.navigate('OrderTracking', { orderId: activeOrder.id })}
+          >
+            <View style={styles.activeOrderIcon}>
+              <Ionicons name="bicycle" size={22} color={Colors.white} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.activeOrderTitle} numberOfLines={1}>
+                Order #{activeOrder.order_number}
+              </Text>
+              <Text style={styles.activeOrderSub} numberOfLines={1}>
+                {activeOrder.restaurant?.name ?? 'Your order'} · Tap to track
+              </Text>
+            </View>
+            <OrderStatusBadge status={activeOrder.status} size="sm" />
+          </TouchableOpacity>
+        )}
+
         {/* Categories */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Categories</Text>
@@ -272,6 +302,19 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   scroll: { paddingTop: 8 },
+  activeOrderBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: Colors.dark[900], marginHorizontal: 20, marginTop: 12,
+    borderRadius: 16, padding: 14,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15, shadowRadius: 10, elevation: 5,
+  },
+  activeOrderIcon: {
+    width: 42, height: 42, borderRadius: 12, backgroundColor: Colors.primary[500],
+    alignItems: 'center', justifyContent: 'center',
+  },
+  activeOrderTitle: { fontSize: 14, fontWeight: '800', color: Colors.white },
+  activeOrderSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
   section: { marginBottom: 8 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 14, marginTop: 20 },
   sectionTitle: { fontSize: 18, fontWeight: '800', color: Colors.dark[900], paddingHorizontal: 20, marginTop: 20, marginBottom: 14 },

@@ -15,6 +15,15 @@ export const restaurantKeys = {
   favorites: (userId: string) => ['favorites', userId] as const,
 };
 
+export function useOrderReview(orderId: string) {
+  return useQuery({
+    queryKey: ['order-review', orderId],
+    queryFn: () => restaurantService.getReviewByOrder(orderId),
+    enabled: !!orderId,
+    staleTime: 60 * 1000,
+  });
+}
+
 export function useRestaurants(filters: SearchFilters = {}) {
   return useInfiniteQuery({
     queryKey: restaurantKeys.list(filters),

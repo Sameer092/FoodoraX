@@ -8,16 +8,9 @@ import { useColorScheme, LogBox } from 'react-native';
 import FlashMessage from 'react-native-flash-message';
 import { RootNavigator } from './src/navigation';
 
-// Suppress known harmless dev-only warnings so the on-screen toasts stay clean.
-// These never appear in a production build.
-LogBox.ignoreLogs([
-  'Non-serializable values were found in the navigation state',
-  'expo-notifications',
-  'Constants.platform.ios.model',
-  '`expo-notifications` functionality is not fully supported in Expo Go',
-  'AsyncStorage has been extracted',
-  'Value being stored in SecureStore is larger than 2048 bytes',
-]);
+// Hide ALL on-screen log/warning toasts. These only ever show in dev mode and
+// never in a production build — this just keeps the dev UI clean.
+LogBox.ignoreAllLogs(true);
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -133,11 +133,18 @@ export function ActiveDeliveryScreen() {
               {order?.delivery_address?.address_line1}, {order?.delivery_address?.city}
             </Text>
           </View>
-          <TouchableOpacity onPress={() => order?.customer?.phone && Linking.openURL(`tel:${order.customer.phone}`)}>
-            <View style={styles.callBtn}>
-              <Ionicons name="call" size={16} color={Colors.status.success} />
-            </View>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity onPress={() => order?.customer?.phone && Linking.openURL(`tel:${order.customer.phone}`)}>
+              <View style={styles.callBtn}>
+                <Ionicons name="call" size={16} color={Colors.status.success} />
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Chat', { orderId, otherName: order?.customer?.full_name })}>
+              <View style={styles.callBtn}>
+                <Ionicons name="chatbubble-outline" size={16} color={Colors.dark[700]} />
+              </View>
+            </TouchableOpacity>
+          </View>
         </TouchableOpacity>
 
         {nextAction && (

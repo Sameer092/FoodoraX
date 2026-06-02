@@ -33,6 +33,7 @@ export type CustomerStackParamList = {
   ReviewOrder: { orderId: string };
   Notifications: undefined;
   EditProfile: undefined;
+  Chat: { orderId: string; otherName?: string };
 };
 
 // ─── Restaurant Owner Stack ────────────────────────────────────
@@ -63,6 +64,7 @@ export type RiderStackParamList = {
   EditProfile: undefined;
   AddAddress: { editId?: string };
   Notifications: undefined;
+  Chat: { orderId: string; otherName?: string };
 };
 
 // ─── Admin Stack ───────────────────────────────────────────────

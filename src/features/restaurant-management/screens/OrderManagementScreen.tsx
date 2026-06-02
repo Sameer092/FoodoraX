@@ -40,11 +40,14 @@ export function OrderManagementScreen() {
   const isLoading = multi ? owner.isLoading : single.isLoading;
   const updateStatus = useUpdateOrderStatus();
 
-  const filtered = allOrders?.filter((o) => {
-    if (activeTab === 'all') return true;
-    if (activeTab === 'preparing') return ['accepted', 'preparing'].includes(o.status);
-    return o.status === activeTab;
-  }) ?? [];
+  const matchesTab = (status: OrderStatus, tab: OrderStatus | 'all') => {
+    if (tab === 'all') return true;
+    if (tab === 'preparing') return ['accepted', 'preparing', 'ready', 'picked_up'].includes(status); // Active = in progress
+    if (tab === 'delivered') return ['delivered', 'cancelled', 'refunded'].includes(status); // Done
+    return status === tab;
+  };
+
+  const filtered = allOrders?.filter((o) => matchesTab(o.status, activeTab)) ?? [];
 
   const handleAction = (order: Order, next: OrderStatus) => {
     Alert.alert('Update Order', `Mark order #${order.order_number} as "${next}"?`, [
@@ -132,10 +135,7 @@ export function OrderManagementScreen() {
         {STATUS_TABS.map((tab) => {
           const count = tab.value === 'all'
             ? allOrders?.length
-            : allOrders?.filter((o) => tab.value === 'preparing'
-              ? ['accepted', 'preparing'].includes(o.status)
-              : o.status === tab.value
-            ).length;
+            : allOrders?.filter((o) => matchesTab(o.status, tab.value)).length;
           return (
             <TouchableOpacity
               key={tab.value}

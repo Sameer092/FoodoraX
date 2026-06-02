@@ -21,6 +21,7 @@ import { NotificationsScreen } from '@features/notifications/screens/Notificatio
 import { EditProfileScreen } from '@features/profile/screens/EditProfileScreen';
 import { AddAddressScreen } from '@features/profile/screens/AddAddressScreen';
 import { ReviewOrderScreen } from '@features/orders/screens/ReviewOrderScreen';
+import { ChatScreen } from '@features/orders/screens/ChatScreen';
 import { useCartStore } from '@store/cart.store';
 import { useAppStore } from '@store/app.store';
 import { Colors } from '@constants/colors';
@@ -122,6 +123,7 @@ export function CustomerNavigator() {
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="AddAddress" component={AddAddressScreen} />
       <Stack.Screen name="ReviewOrder" component={ReviewOrderScreen} />
+      <Stack.Screen name="Chat" component={ChatScreen} />
     </Stack.Navigator>
   );
 }

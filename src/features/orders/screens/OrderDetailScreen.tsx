@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useOrder } from '@hooks/useOrders';
+import { useOrderReview } from '@hooks/useRestaurants';
 import { OrderStatusBadge } from '@components/order/OrderStatusBadge';
 import { Colors } from '@constants/colors';
 import { format } from 'date-fns';
@@ -13,6 +14,7 @@ export function OrderDetailScreen() {
   const route = useRoute<any>();
   const { orderId } = route.params;
   const { data: order, isLoading } = useOrder(orderId);
+  const { data: existingReview } = useOrderReview(orderId);
 
   if (isLoading || !order) return null;
 
@@ -87,12 +89,19 @@ export function OrderDetailScreen() {
         </View>
 
         {order.status === 'delivered' && (
-          <TouchableOpacity
-            style={styles.reviewBtn}
-            onPress={() => navigation.navigate('ReviewOrder', { orderId })}
-          >
-            <Text style={styles.reviewBtnText}>⭐ Rate this order</Text>
-          </TouchableOpacity>
+          existingReview ? (
+            <View style={styles.reviewedBadge}>
+              <Ionicons name="checkmark-circle" size={18} color={Colors.status.success} />
+              <Text style={styles.reviewedText}>You rated this order {existingReview.overall_rating}★</Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.reviewBtn}
+              onPress={() => navigation.navigate('ReviewOrder', { orderId })}
+            >
+              <Text style={styles.reviewBtnText}>⭐ Rate this order</Text>
+            </TouchableOpacity>
+          )
         )}
 
         <View style={{ height: 40 }} />
@@ -134,4 +143,9 @@ const styles = StyleSheet.create({
     paddingVertical: 16, alignItems: 'center',
   },
   reviewBtnText: { fontSize: 16, fontWeight: '700', color: Colors.white },
+  reviewedBadge: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    margin: 20, backgroundColor: '#dcfce7', borderRadius: 14, paddingVertical: 16,
+  },
+  reviewedText: { fontSize: 15, fontWeight: '700', color: '#166534' },
 });

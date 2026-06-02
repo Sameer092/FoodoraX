@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated as RNAnimated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Linking, Animated as RNAnimated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,7 @@ import MapView, { Marker, Polyline } from 'react-native-maps';
 // PROVIDER_GOOGLE removed — using default provider (free, no API key needed for dev)
 import { Image } from 'expo-image';
 import { useOrderWithRealtime } from '@hooks/useOrders';
+import { useOrderReview } from '@hooks/useRestaurants';
 import { locationService } from '@services/location.service';
 import { supabase } from '@services/supabase';
 import { useAppStore } from '@store/app.store';
@@ -32,6 +33,7 @@ export function OrderTrackingScreen() {
   const route = useRoute<any>();
   const { orderId } = route.params;
   const { data: order, isLoading } = useOrderWithRealtime(orderId);
+  const { data: existingReview } = useOrderReview(orderId);
   const { currentLocation } = useAppStore();
   const [riderLocation, setRiderLocation] = useState<RiderLocation | null>(null);
   const mapRef = useRef<MapView>(null);
@@ -156,10 +158,16 @@ export function OrderTrackingScreen() {
               <Text style={styles.riderName}>{order.rider.full_name}</Text>
               <Text style={styles.riderRole}>Your Delivery Rider</Text>
             </View>
-            <TouchableOpacity style={styles.callBtn}>
+            <TouchableOpacity
+              style={styles.callBtn}
+              onPress={() => order?.rider?.phone && Linking.openURL(`tel:${order.rider.phone}`)}
+            >
               <Ionicons name="call" size={18} color={Colors.primary[500]} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.msgBtn}>
+            <TouchableOpacity
+              style={styles.msgBtn}
+              onPress={() => navigation.navigate('Chat', { orderId, otherName: order?.rider?.full_name })}
+            >
               <Ionicons name="chatbubble-outline" size={18} color={Colors.dark[700]} />
             </TouchableOpacity>
           </View>
@@ -172,12 +180,19 @@ export function OrderTrackingScreen() {
         </View>
 
         {order?.status === 'delivered' && (
-          <TouchableOpacity
-            style={styles.reviewBtn}
-            onPress={() => navigation.navigate('ReviewOrder', { orderId })}
-          >
-            <Text style={styles.reviewBtnText}>Rate Your Experience ⭐</Text>
-          </TouchableOpacity>
+          existingReview ? (
+            <View style={styles.reviewedBadge}>
+              <Ionicons name="checkmark-circle" size={18} color={Colors.status.success} />
+              <Text style={styles.reviewedText}>You rated this order {existingReview.overall_rating}★</Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.reviewBtn}
+              onPress={() => navigation.navigate('ReviewOrder', { orderId })}
+            >
+              <Text style={styles.reviewBtnText}>Rate Your Experience ⭐</Text>
+            </TouchableOpacity>
+          )
         )}
       </View>
     </View>
@@ -273,4 +288,9 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: Colors.primary[200],
   },
   reviewBtnText: { fontSize: 15, fontWeight: '700', color: Colors.primary[600] },
+  reviewedBadge: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: '#dcfce7', borderRadius: 12, paddingVertical: 14,
+  },
+  reviewedText: { fontSize: 14, fontWeight: '700', color: '#166534' },
 });

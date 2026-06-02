@@ -43,10 +43,19 @@ export function useOrderWithRealtime(orderId: string) {
   useEffect(() => {
     if (!orderId) return;
     const channel = orderService.subscribeToOrder(orderId, (updated) => {
-      queryClient.setQueryData(orderKeys.detail(orderId), updated);
+      // Realtime sends only the bare order row (no joined customer/restaurant/
+      // items/address). MERGE the changed fields into the existing cached order
+      // so the joined data isn't wiped out.
+      queryClient.setQueryData(orderKeys.detail(orderId), (old: any) =>
+        old ? { ...old, ...updated } : updated
+      );
+      // If a rider was just assigned, refetch once to pull in the rider's joined info.
+      if (updated.rider_id && !query.data?.rider) {
+        queryClient.invalidateQueries({ queryKey: orderKeys.detail(orderId) });
+      }
     });
     return () => { supabase.removeChannel(channel); };
-  }, [orderId, queryClient]);
+  }, [orderId, queryClient, query.data?.rider]);
 
   return query;
 }
@@ -136,9 +145,15 @@ export function useUpdateOrderStatus() {
       updates?: Record<string, unknown>;
     }) => orderService.updateOrderStatus(orderId, status, updates),
     onSuccess: (data) => {
-      queryClient.setQueryData(orderKeys.detail(data.id), data);
+      // Merge (don't replace) so joined customer/restaurant/items data is kept
+      queryClient.setQueryData(orderKeys.detail(data.id), (old: any) =>
+        old ? { ...old, ...data } : data
+      );
       queryClient.invalidateQueries({ queryKey: orderKeys.restaurant(data.restaurant_id) });
       queryClient.invalidateQueries({ queryKey: orderKeys.available() });
+      queryClient.invalidateQueries({ queryKey: ['orders', 'owner'] });
+      queryClient.invalidateQueries({ queryKey: ['rider'] });          // rider dashboard + earnings
+      queryClient.invalidateQueries({ queryKey: ['profile-stats'] });  // profile header stats
     },
   });
 }

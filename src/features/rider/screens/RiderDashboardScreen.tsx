@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@store/auth.store';
 import { useAvailableDeliveries, useAcceptDelivery, useRiderActiveDelivery } from '@hooks/useOrders';
 import { useRiderLocationTracking } from '@hooks/useLocation';
@@ -23,6 +24,27 @@ export function RiderDashboardScreen() {
   const { data: activeDelivery } = useRiderActiveDelivery();
   const { data: availableDeliveries, isLoading } = useAvailableDeliveries();
   const acceptDelivery = useAcceptDelivery();
+
+  // Real rider stats
+  const { data: stats } = useQuery({
+    queryKey: ['rider', 'dashboard-stats', user?.id],
+    enabled: !!user,
+    refetchInterval: 30 * 1000,
+    queryFn: async () => {
+      const [{ data: rider }, { data: delivered }] = await Promise.all([
+        supabase.from('riders').select('avg_rating').eq('id', user!.id).maybeSingle(),
+        supabase.from('orders').select('delivery_fee, delivered_at').eq('rider_id', user!.id).eq('status', 'delivered'),
+      ]);
+      const rows = (delivered ?? []) as { delivery_fee: number; delivered_at: string }[];
+      const today = new Date().toDateString();
+      const todayRows = rows.filter((o) => o.delivered_at && new Date(o.delivered_at).toDateString() === today);
+      return {
+        todayCount: todayRows.length,
+        todayEarnings: todayRows.reduce((s, o) => s + Number(o.delivery_fee ?? 0), 0),
+        rating: Number(rider?.avg_rating ?? 0),
+      };
+    },
+  });
 
   useRiderLocationTracking(user?.id, isOnline);
 
@@ -99,38 +121,52 @@ export function RiderDashboardScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={styles.greeting}>Hey, {user?.full_name?.split(' ')[0]} 👋</Text>
           <Text style={styles.subGreeting}>Ready to deliver?</Text>
         </View>
-        <View style={styles.onlineToggle}>
-          <Text style={[styles.onlineLabel, isOnline && styles.onlineActive]}>
-            {isOnline ? 'Online' : 'Offline'}
-          </Text>
-          <Switch
-            value={isOnline}
-            onValueChange={toggleOnline}
-            trackColor={{ false: Colors.light.border, true: Colors.status.success }}
-            thumbColor={Colors.white}
-          />
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.navigate('EarningsHistory')}>
+            <Ionicons name="wallet-outline" size={20} color={Colors.dark[800]} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.navigate('RiderProfile')}>
+            <Ionicons name="person-outline" size={20} color={Colors.dark[800]} />
+          </TouchableOpacity>
         </View>
+      </View>
+
+      {/* Online toggle pill */}
+      <View style={styles.togglePill}>
+        <View style={styles.toggleInfo}>
+          <View style={[styles.statusDot, { backgroundColor: isOnline ? Colors.status.success : Colors.light.textTertiary }]} />
+          <View>
+            <Text style={styles.toggleTitle}>{isOnline ? "You're Online" : "You're Offline"}</Text>
+            <Text style={styles.toggleSub}>{isOnline ? 'Receiving delivery requests' : 'Go online to receive requests'}</Text>
+          </View>
+        </View>
+        <Switch
+          value={isOnline}
+          onValueChange={toggleOnline}
+          trackColor={{ false: Colors.light.border, true: Colors.status.success }}
+          thumbColor={Colors.white}
+        />
       </View>
 
       {/* Stats */}
       <View style={styles.stats}>
         <View style={styles.statCard}>
           <Ionicons name="bicycle" size={24} color={Colors.primary[500]} />
-          <Text style={styles.statValue}>0</Text>
+          <Text style={styles.statValue}>{stats?.todayCount ?? 0}</Text>
           <Text style={styles.statLabel}>Today's Deliveries</Text>
         </View>
         <View style={styles.statCard}>
           <Ionicons name="cash" size={24} color={Colors.status.success} />
-          <Text style={styles.statValue}>$0.00</Text>
+          <Text style={styles.statValue}>${(stats?.todayEarnings ?? 0).toFixed(2)}</Text>
           <Text style={styles.statLabel}>Today's Earnings</Text>
         </View>
         <View style={styles.statCard}>
           <Ionicons name="star" size={24} color="#FBBF24" />
-          <Text style={styles.statValue}>5.0</Text>
+          <Text style={styles.statValue}>{(stats?.rating ?? 0).toFixed(1)}</Text>
           <Text style={styles.statLabel}>Rating</Text>
         </View>
       </View>
@@ -190,9 +226,21 @@ const styles = StyleSheet.create({
   },
   greeting: { fontSize: 22, fontWeight: '800', color: Colors.dark[900] },
   subGreeting: { fontSize: 13, color: Colors.light.textSecondary, marginTop: 2 },
-  onlineToggle: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
-  onlineLabel: { fontSize: 13, fontWeight: '600', color: Colors.dark[500] },
-  onlineActive: { color: Colors.status.success },
+  headerActions: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  headerBtn: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.light.surface,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  togglePill: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: Colors.white, marginHorizontal: 16, marginTop: 4, marginBottom: 8,
+    borderRadius: 16, padding: 14,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 3,
+  },
+  toggleInfo: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  statusDot: { width: 12, height: 12, borderRadius: 6 },
+  toggleTitle: { fontSize: 15, fontWeight: '700', color: Colors.dark[900] },
+  toggleSub: { fontSize: 12, color: Colors.light.textSecondary, marginTop: 1 },
   stats: { flexDirection: 'row', gap: 10, padding: 16 },
   statCard: {
     flex: 1, backgroundColor: Colors.white, borderRadius: 14, padding: 14, alignItems: 'center', gap: 6,

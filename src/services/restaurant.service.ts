@@ -159,6 +159,16 @@ export const restaurantService = {
 
   // ─── Reviews ────────────────────────────────────────────────
 
+  async getReviewByOrder(orderId: string): Promise<Review | null> {
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*')
+      .eq('order_id', orderId)
+      .maybeSingle();
+    if (error && error.code !== 'PGRST116') throw error;
+    return (data as Review) ?? null;
+  },
+
   async getReviews(restaurantId: string, page = 0, pageSize = 10) {
     const { data, error, count } = await supabase
       .from('reviews')

@@ -6,6 +6,7 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { authService } from '@services/auth.service';
 import { useAuthStore } from '@store/auth.store';
+import { useProfileStats } from '@hooks/useProfileStats';
 import { Colors } from '@constants/colors';
 
 interface MenuItem {
@@ -29,6 +30,7 @@ const MENU_ITEMS: MenuItem[] = [
 export function ProfileScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuthStore();
+  const { data: stats } = useProfileStats();
 
   // Only show customer-only items (e.g. Favorites) to customers
   const menuItems = MENU_ITEMS.filter(
@@ -52,10 +54,20 @@ export function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 120 }}
+      >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Profile</Text>
+          <View style={styles.headerLeft}>
+            {navigation.canGoBack() && (
+              <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                <Ionicons name="arrow-back" size={22} color={Colors.dark[900]} />
+              </TouchableOpacity>
+            )}
+            <Text style={styles.headerTitle}>Profile</Text>
+          </View>
           <TouchableOpacity onPress={() => navigation.navigate('EditProfile')} style={styles.editBtn}>
             <Ionicons name="create-outline" size={20} color={Colors.primary[500]} />
           </TouchableOpacity>
@@ -84,22 +96,21 @@ export function ProfileScreen() {
           </View>
         </View>
 
-        {/* Stats */}
+        {/* Stats — real, role-appropriate data */}
         <View style={styles.stats}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>24</Text>
-            <Text style={styles.statLabel}>Orders</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>12</Text>
-            <Text style={styles.statLabel}>Favorites</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>4.8</Text>
-            <Text style={styles.statLabel}>Avg Rating</Text>
-          </View>
+          {(stats ?? [
+            { label: 'Orders', value: '0' },
+            { label: 'Favorites', value: '0' },
+            { label: 'Reviews', value: '0' },
+          ]).map((stat, i) => (
+            <React.Fragment key={stat.label}>
+              {i > 0 && <View style={styles.statDivider} />}
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{stat.value}</Text>
+                <Text style={styles.statLabel}>{stat.label}</Text>
+              </View>
+            </React.Fragment>
+          ))}
         </View>
 
         {/* Menu */}
@@ -137,6 +148,12 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4,
+  },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  backBtn: {
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: Colors.light.surface,
+    alignItems: 'center', justifyContent: 'center',
   },
   headerTitle: { fontSize: 26, fontWeight: '900', color: Colors.dark[900] },
   editBtn: {

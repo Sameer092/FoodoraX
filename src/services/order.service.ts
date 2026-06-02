@@ -176,18 +176,34 @@ export const orderService = {
       .select()
       .single();
     if (error) throw error;
+
+    await notifyCustomerOfStatus(data as Order, status);
     return data as Order;
   },
 
+  // Rider accepts an available delivery. This only ASSIGNS the rider —
+  // it does NOT mark the order picked up. The rider marks pickup/delivery later.
   async assignRider(orderId: string, riderId: string) {
     const { data, error } = await supabase
       .from('orders')
-      .update({ rider_id: riderId, status: 'picked_up' })
+      .update({ rider_id: riderId })
       .eq('id', orderId)
-      .select()
+      .select('*, customer:users!orders_customer_id_fkey(id)')
       .single();
     if (error) throw error;
-    return data as Order;
+
+    const order = data as Order;
+    if (order.customer_id) {
+      await supabase.from('notifications').insert({
+        user_id: order.customer_id,
+        type: 'rider_assigned',
+        title: '🛵 Rider Assigned',
+        body: `A rider is heading to the restaurant to pick up order #${order.order_number}.`,
+        data: { orderId },
+        sent_at: new Date().toISOString(),
+      });
+    }
+    return order;
   },
 
   subscribeToOrder(orderId: string, callback: (order: Order) => void) {
@@ -221,6 +237,33 @@ export const orderService = {
     return channel;
   },
 };
+
+// Sends an in-app notification to the customer whenever order status changes.
+const STATUS_NOTIFICATIONS: Partial<Record<OrderStatus, { type: string; title: string; body: string }>> = {
+  accepted:  { type: 'order_accepted',  title: '✅ Order Accepted',   body: 'The restaurant accepted your order and will start preparing it.' },
+  preparing: { type: 'order_preparing', title: '👨‍🍳 Preparing',       body: 'Your food is being prepared.' },
+  ready:     { type: 'order_ready',     title: '🛍️ Ready for Pickup', body: 'Your order is ready and waiting for a rider.' },
+  picked_up: { type: 'rider_nearby',    title: '🏍️ On the Way',       body: 'Your rider has picked up your order and is on the way!' },
+  delivered: { type: 'order_delivered', title: '🎉 Delivered',        body: 'Your order has been delivered. Enjoy your meal!' },
+  cancelled: { type: 'order_cancelled', title: '❌ Order Cancelled',   body: 'Your order was cancelled.' },
+};
+
+async function notifyCustomerOfStatus(order: Order, status: OrderStatus) {
+  const cfg = STATUS_NOTIFICATIONS[status];
+  if (!cfg || !order?.customer_id) return;
+  try {
+    await supabase.from('notifications').insert({
+      user_id: order.customer_id,
+      type: cfg.type,
+      title: cfg.title,
+      body: `${cfg.body} (Order #${order.order_number})`,
+      data: { orderId: order.id },
+      sent_at: new Date().toISOString(),
+    });
+  } catch {
+    // notifications are best-effort; never block the status update
+  }
+}
 
 // Removes any existing channel with the same name so we never call
 // .on() on an already-subscribed channel (which Supabase forbids).

@@ -8,6 +8,7 @@ import { RiderProfileScreen } from '@features/rider/screens/RiderProfileScreen';
 import { EditProfileScreen } from '@features/profile/screens/EditProfileScreen';
 import { AddAddressScreen } from '@features/profile/screens/AddAddressScreen';
 import { NotificationsScreen } from '@features/notifications/screens/NotificationsScreen';
+import { ChatScreen } from '@features/orders/screens/ChatScreen';
 
 const Stack = createNativeStackNavigator<RiderStackParamList>();
 
@@ -22,6 +23,7 @@ export function RiderNavigator() {
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="AddAddress" component={AddAddressScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
+      <Stack.Screen name="Chat" component={ChatScreen} />
     </Stack.Navigator>
   );
 }
