@@ -179,7 +179,7 @@ export function HomeScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Featured</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Search' as any)}>
               <Text style={styles.seeAll}>See all</Text>
             </TouchableOpacity>
           </View>
@@ -203,7 +203,7 @@ export function HomeScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Nearby Restaurants</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Search' as any)}>
               <Text style={styles.seeAll}>See all</Text>
             </TouchableOpacity>
           </View>

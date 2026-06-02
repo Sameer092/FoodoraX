@@ -41,7 +41,7 @@ export type RestaurantOwnerStackParamList = {
   MenuManagement: { restaurantId: string };
   AddMenuItem: { restaurantId: string; categoryId?: string };
   EditMenuItem: { restaurantId: string; itemId: string };
-  OrderManagement: { restaurantId: string };
+  OrderManagement: { restaurantId: string; restaurantIds?: string[] };
   OrderDetail: { orderId: string };
   RestaurantSettings: { restaurantId: string };
   CreateRestaurant: undefined;
@@ -65,12 +65,22 @@ export type RiderStackParamList = {
   Notifications: undefined;
 };
 
+// ─── Admin Stack ───────────────────────────────────────────────
+export type AdminStackParamList = {
+  AdminDashboard: undefined;
+  ManageRestaurants: undefined;
+  ManageRiders: undefined;
+  ManageUsers: undefined;
+  PlatformSettings: undefined;
+};
+
 // ─── Root Stack ────────────────────────────────────────────────
 export type RootStackParamList = {
   Splash: undefined;
   Auth: undefined;
   Customer: undefined;
   RestaurantOwner: undefined;
+  Admin: undefined;
   Rider: undefined;
 };
 

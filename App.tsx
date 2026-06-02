@@ -16,6 +16,7 @@ LogBox.ignoreLogs([
   'Constants.platform.ios.model',
   '`expo-notifications` functionality is not fully supported in Expo Go',
   'AsyncStorage has been extracted',
+  'Value being stored in SecureStore is larger than 2048 bytes',
 ]);
 
 const queryClient = new QueryClient({

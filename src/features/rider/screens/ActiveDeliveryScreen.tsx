@@ -8,6 +8,7 @@ import MapView, { Marker } from 'react-native-maps';
 import { useOrderWithRealtime, useUpdateOrderStatus } from '@hooks/useOrders';
 import { useRiderLocationTracking } from '@hooks/useLocation';
 import { useAuthStore } from '@store/auth.store';
+import { useAppStore } from '@store/app.store';
 import { OrderStatusBadge } from '@components/order/OrderStatusBadge';
 import { Button } from '@components/common/Button';
 import { Colors } from '@constants/colors';
@@ -17,6 +18,7 @@ export function ActiveDeliveryScreen() {
   const route = useRoute<any>();
   const { orderId } = route.params;
   const { user } = useAuthStore();
+  const { currentLocation } = useAppStore();
   const { data: order } = useOrderWithRealtime(orderId);
   const updateStatus = useUpdateOrderStatus();
   const mapRef = useRef<MapView>(null);
@@ -59,9 +61,9 @@ export function ActiveDeliveryScreen() {
         ref={mapRef}
         style={styles.map}
         initialRegion={{
-          latitude: order?.restaurant?.latitude ?? 25.2,
-          longitude: order?.restaurant?.longitude ?? 55.27,
-          latitudeDelta: 0.05, longitudeDelta: 0.05,
+          latitude: order?.delivery_address?.latitude ?? order?.restaurant?.latitude ?? currentLocation?.latitude ?? 24.8607,
+          longitude: order?.delivery_address?.longitude ?? order?.restaurant?.longitude ?? currentLocation?.longitude ?? 67.0011,
+          latitudeDelta: 0.08, longitudeDelta: 0.08,
         }}
       >
         {order?.restaurant?.latitude && (

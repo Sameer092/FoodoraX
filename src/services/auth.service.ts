@@ -1,12 +1,27 @@
 import { supabase } from './supabase';
 import type { User, UserRole } from '@types/database.types';
 
+export interface RestaurantSignUpData {
+  restaurant_name: string;
+  cuisine_type: string;
+  address: string;
+  city: string;
+}
+
+export interface RiderSignUpData {
+  vehicle_type: string;
+  vehicle_number?: string;
+  license_number?: string;
+}
+
 export interface SignUpData {
   email: string;
   password: string;
   full_name: string;
   phone?: string;
   role?: UserRole;
+  restaurant?: RestaurantSignUpData;
+  rider?: RiderSignUpData;
 }
 
 export interface SignInData {
@@ -15,8 +30,7 @@ export interface SignInData {
 }
 
 export const authService = {
-  async signUp({ email, password, full_name, phone, role = 'customer' }: SignUpData) {
-    // Pass metadata — the DB trigger handle_new_user() creates the users row automatically
+  async signUp({ email, password, full_name, phone, role = 'customer', restaurant, rider }: SignUpData) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -26,7 +40,49 @@ export const authService = {
       },
     });
     if (error) throw error;
+
+    // If signup returned a session (email confirmation OFF), we can create the
+    // role-specific records right away. Otherwise they're created on first login.
+    if (data.session && data.user) {
+      await authService.ensureProfile(data.user.id, { email, full_name, phone, role });
+
+      if (role === 'restaurant_owner' && restaurant) {
+        await supabase.from('restaurants').insert({
+          owner_id: data.user.id,
+          name: restaurant.restaurant_name,
+          cuisine_type: restaurant.cuisine_type.split(',').map((c) => c.trim()).filter(Boolean),
+          address: restaurant.address,
+          city: restaurant.city,
+          is_open: true,
+          is_verified: false, // pending admin approval
+        });
+      }
+
+      if (role === 'rider' && rider) {
+        await supabase.from('riders').upsert({
+          id: data.user.id,
+          vehicle_type: rider.vehicle_type,
+          vehicle_number: rider.vehicle_number,
+          license_number: rider.license_number,
+          is_verified: false, // pending admin approval
+        });
+      }
+    }
+
     return data;
+  },
+
+  async ensureProfile(
+    userId: string,
+    profile: { email: string; full_name: string; phone?: string; role: UserRole }
+  ) {
+    await supabase.from('users').upsert({
+      id: userId,
+      email: profile.email,
+      full_name: profile.full_name,
+      phone: profile.phone,
+      role: profile.role,
+    }, { onConflict: 'id' });
   },
 
   async signIn({ email, password }: SignInData) {

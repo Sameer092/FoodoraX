@@ -72,6 +72,32 @@ export function useRestaurantOrders(restaurantId: string) {
   return query;
 }
 
+// Aggregates orders across ALL of an owner's restaurants, with live updates.
+export function useOwnerOrders(restaurantIds: string[]) {
+  const queryClient = useQueryClient();
+  const idsKey = [...restaurantIds].sort().join(',');
+
+  const query = useQuery({
+    queryKey: ['orders', 'owner', idsKey],
+    queryFn: () => orderService.getOrdersByRestaurants(restaurantIds),
+    enabled: restaurantIds.length > 0,
+    refetchInterval: 20 * 1000,
+  });
+
+  useEffect(() => {
+    if (!restaurantIds.length) return;
+    const channels = restaurantIds.map((id) =>
+      orderService.subscribeToRestaurantOrders(id, () => {
+        queryClient.invalidateQueries({ queryKey: ['orders', 'owner', idsKey] });
+      })
+    );
+    return () => { channels.forEach((c) => supabase.removeChannel(c)); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idsKey, queryClient]);
+
+  return query;
+}
+
 export function useAvailableDeliveries() {
   return useQuery({
     queryKey: orderKeys.available(),

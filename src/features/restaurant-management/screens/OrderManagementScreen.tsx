@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRestaurantOrders, useUpdateOrderStatus } from '@hooks/useOrders';
+import { useRestaurantOrders, useOwnerOrders, useUpdateOrderStatus } from '@hooks/useOrders';
 import { OrderStatusBadge } from '@components/order/OrderStatusBadge';
 import { EmptyState } from '@components/common/EmptyState';
 import { Colors } from '@constants/colors';
@@ -27,9 +27,17 @@ const NEXT_ACTIONS: Record<string, { label: string; next: OrderStatus; color: st
 export function OrderManagementScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { restaurantId } = route.params;
+  const { restaurantId, restaurantIds } = route.params as { restaurantId: string; restaurantIds?: string[] };
+
+  // If the owner has multiple restaurants, show orders across all of them.
+  const ids = restaurantIds && restaurantIds.length > 0 ? restaurantIds : [restaurantId];
+  const multi = ids.length > 1;
+
   const [activeTab, setActiveTab] = useState<OrderStatus | 'all'>('all');
-  const { data: allOrders, isLoading } = useRestaurantOrders(restaurantId);
+  const single = useRestaurantOrders(multi ? '' : ids[0]);
+  const owner = useOwnerOrders(multi ? ids : []);
+  const allOrders = multi ? owner.data : single.data;
+  const isLoading = multi ? owner.isLoading : single.isLoading;
   const updateStatus = useUpdateOrderStatus();
 
   const filtered = allOrders?.filter((o) => {
@@ -65,8 +73,11 @@ export function OrderManagementScreen() {
     return (
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.orderNum}>#{item.order_number}</Text>
+            {multi && item.restaurant?.name && (
+              <Text style={styles.restaurantTag}>🍽 {item.restaurant.name}</Text>
+            )}
             <Text style={styles.customerName}>{item.customer?.full_name}</Text>
             <Text style={styles.orderTime}>{format(new Date(item.created_at), 'h:mm a')}</Text>
           </View>
@@ -178,6 +189,7 @@ const styles = StyleSheet.create({
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
   orderNum: { fontSize: 15, fontWeight: '700', color: Colors.dark[900] },
   customerName: { fontSize: 13, color: Colors.dark[600], marginTop: 2 },
+  restaurantTag: { fontSize: 12, color: Colors.primary[600], fontWeight: '600', marginTop: 2 },
   orderTime: { fontSize: 11, color: Colors.light.textSecondary, marginTop: 2 },
   rightHeader: { alignItems: 'flex-end', gap: 6 },
   total: { fontSize: 18, fontWeight: '800', color: Colors.dark[900] },

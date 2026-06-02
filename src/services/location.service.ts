@@ -30,6 +30,19 @@ export const locationService = {
     return [r.streetNumber, r.street, r.district, r.city].filter(Boolean).join(', ');
   },
 
+  async reverseGeocodeDetailed(coords: Coordinates): Promise<{
+    line1: string; city: string; postalCode: string;
+  } | null> {
+    const results = await Location.reverseGeocodeAsync(coords);
+    if (!results.length) return null;
+    const r = results[0];
+    return {
+      line1: [r.streetNumber, r.street ?? r.name].filter(Boolean).join(' '),
+      city: r.city ?? r.subregion ?? r.region ?? '',
+      postalCode: r.postalCode ?? '',
+    };
+  },
+
   async geocodeAddress(address: string): Promise<Coordinates | null> {
     const results = await Location.geocodeAsync(address);
     if (!results.length) return null;

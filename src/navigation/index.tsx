@@ -8,6 +8,7 @@ import { AuthNavigator } from './AuthNavigator';
 import { CustomerNavigator } from './CustomerNavigator';
 import { RestaurantOwnerNavigator } from './RestaurantOwnerNavigator';
 import { RiderNavigator } from './RiderNavigator';
+import { AdminNavigator } from './AdminNavigator';
 import type { RootStackParamList } from '@types/navigation.types';
 import { Colors } from '@constants/colors';
 
@@ -30,6 +31,8 @@ export function RootNavigator() {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!user ? (
           <Stack.Screen name="Auth" component={AuthNavigator} />
+        ) : user.role === 'admin' ? (
+          <Stack.Screen name="Admin" component={AdminNavigator} />
         ) : user.role === 'restaurant_owner' ? (
           <Stack.Screen name="RestaurantOwner" component={RestaurantOwnerNavigator} />
         ) : user.role === 'rider' ? (

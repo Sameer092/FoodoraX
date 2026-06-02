@@ -113,6 +113,22 @@ export const orderService = {
     return (data ?? []) as Order[];
   },
 
+  async getOrdersByRestaurants(restaurantIds: string[]) {
+    if (!restaurantIds.length) return [];
+    const { data, error } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        customer:users!orders_customer_id_fkey(id, full_name, phone),
+        restaurant:restaurants(id, name, logo_url),
+        items:order_items(id, name, quantity)
+      `)
+      .in('restaurant_id', restaurantIds)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data ?? []) as Order[];
+  },
+
   async getAvailableDeliveries() {
     const { data, error } = await supabase
       .from('orders')

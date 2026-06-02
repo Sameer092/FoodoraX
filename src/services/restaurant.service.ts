@@ -13,7 +13,8 @@ export const restaurantService = {
 
     let q = supabase
       .from('restaurants')
-      .select('*, images:restaurant_images(url, is_primary)', { count: 'exact' });
+      .select('*, images:restaurant_images(url, is_primary)', { count: 'exact' })
+      .eq('is_verified', true); // customers only see admin-approved restaurants
 
     if (query) q = q.ilike('name', `%${query}%`);
     if (cuisineType?.length) q = q.overlaps('cuisine_type', cuisineType);
@@ -50,6 +51,7 @@ export const restaurantService = {
       .select('*, images:restaurant_images(url, is_primary)')
       .eq('is_featured', true)
       .eq('is_open', true)
+      .eq('is_verified', true)
       .order('avg_rating', { ascending: false })
       .limit(limit);
     if (error) throw error;
@@ -61,6 +63,7 @@ export const restaurantService = {
       .from('restaurants')
       .select('*, images:restaurant_images(url, is_primary)')
       .eq('is_open', true)
+      .eq('is_verified', true)
       .not('latitude', 'is', null)
       .not('longitude', 'is', null)
       .limit(limit);

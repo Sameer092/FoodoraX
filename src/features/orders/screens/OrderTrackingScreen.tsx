@@ -9,6 +9,7 @@ import { Image } from 'expo-image';
 import { useOrderWithRealtime } from '@hooks/useOrders';
 import { locationService } from '@services/location.service';
 import { supabase } from '@services/supabase';
+import { useAppStore } from '@store/app.store';
 import { OrderStatusBadge } from '@components/order/OrderStatusBadge';
 import { Colors } from '@constants/colors';
 import type { RiderLocation, OrderStatus } from '@types/index';
@@ -31,8 +32,20 @@ export function OrderTrackingScreen() {
   const route = useRoute<any>();
   const { orderId } = route.params;
   const { data: order, isLoading } = useOrderWithRealtime(orderId);
+  const { currentLocation } = useAppStore();
   const [riderLocation, setRiderLocation] = useState<RiderLocation | null>(null);
   const mapRef = useRef<MapView>(null);
+
+  // Center the map on the delivery location (your real address) once it loads
+  useEffect(() => {
+    const dest = order?.delivery_address;
+    if (dest?.latitude && dest?.longitude) {
+      mapRef.current?.animateToRegion({
+        latitude: dest.latitude, longitude: dest.longitude,
+        latitudeDelta: 0.04, longitudeDelta: 0.04,
+      });
+    }
+  }, [order?.delivery_address?.latitude, order?.delivery_address?.longitude]);
 
   useEffect(() => {
     if (!order?.rider_id) return;
@@ -61,8 +74,8 @@ export function OrderTrackingScreen() {
         ref={mapRef}
         style={styles.map}
         initialRegion={{
-          latitude: riderLocation?.latitude ?? order?.delivery_address?.latitude ?? 25.2048,
-          longitude: riderLocation?.longitude ?? order?.delivery_address?.longitude ?? 55.2708,
+          latitude: order?.delivery_address?.latitude ?? riderLocation?.latitude ?? currentLocation?.latitude ?? 24.8607,
+          longitude: order?.delivery_address?.longitude ?? riderLocation?.longitude ?? currentLocation?.longitude ?? 67.0011,
           latitudeDelta: 0.05, longitudeDelta: 0.05,
         }}
       >

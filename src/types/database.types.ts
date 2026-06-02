@@ -269,6 +269,15 @@ export interface Notification {
   created_at: string;
 }
 
+export interface PlatformSettings {
+  id: number;
+  rider_base_pay: number;
+  rider_per_km: number;
+  platform_commission: number;
+  min_payout: number;
+  updated_at: string;
+}
+
 export interface PromoCode {
   id: string;
   code: string;

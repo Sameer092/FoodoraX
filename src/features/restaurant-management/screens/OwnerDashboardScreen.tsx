@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@store/auth.store';
 import { restaurantService } from '@services/restaurant.service';
 import { useQuery } from '@tanstack/react-query';
-import { useRestaurantOrders } from '@hooks/useOrders';
+import { useOwnerOrders } from '@hooks/useOrders';
 import { OrderStatusBadge } from '@components/order/OrderStatusBadge';
 import { Colors } from '@constants/colors';
 import type { Restaurant } from '@types/index';
@@ -22,7 +22,8 @@ export function OwnerDashboardScreen() {
   });
 
   const firstRestaurant = restaurants?.[0];
-  const { data: orders } = useRestaurantOrders(firstRestaurant?.id ?? '');
+  const restaurantIds = (restaurants ?? []).map((r) => r.id);
+  const { data: orders } = useOwnerOrders(restaurantIds);
 
   const pendingOrders = orders?.filter((o) => o.status === 'pending') ?? [];
   const activeOrders = orders?.filter((o) => ['accepted', 'preparing', 'ready'].includes(o.status)) ?? [];
@@ -67,6 +68,19 @@ export function OwnerDashboardScreen() {
           </TouchableOpacity>
         )}
 
+        {/* Pending approval banner */}
+        {firstRestaurant && !firstRestaurant.is_verified && (
+          <View style={styles.pendingBanner}>
+            <Ionicons name="hourglass-outline" size={20} color="#92400e" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.pendingTitle}>Pending Admin Approval</Text>
+              <Text style={styles.pendingText}>
+                Your restaurant isn't visible to customers yet. You can set up your menu while you wait.
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Stats */}
         {firstRestaurant && (
           <>
@@ -94,7 +108,7 @@ export function OwnerDashboardScreen() {
               <View style={styles.actions}>
                 <TouchableOpacity
                   style={styles.actionCard}
-                  onPress={() => navigation.navigate('OrderManagement', { restaurantId: firstRestaurant.id })}
+                  onPress={() => navigation.navigate('OrderManagement', { restaurantId: firstRestaurant.id, restaurantIds })}
                 >
                   <View style={[styles.actionIcon, { backgroundColor: '#dbeafe' }]}>
                     <Ionicons name="receipt" size={22} color="#1d4ed8" />
@@ -142,7 +156,7 @@ export function OwnerDashboardScreen() {
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Pending Orders</Text>
-                  <TouchableOpacity onPress={() => navigation.navigate('OrderManagement', { restaurantId: firstRestaurant.id })}>
+                  <TouchableOpacity onPress={() => navigation.navigate('OrderManagement', { restaurantId: firstRestaurant.id, restaurantIds })}>
                     <Text style={styles.seeAll}>See all</Text>
                   </TouchableOpacity>
                 </View>
@@ -155,7 +169,9 @@ export function OwnerDashboardScreen() {
                     <View style={styles.orderInfo}>
                       <Text style={styles.orderNum}>#{order.order_number}</Text>
                       <Text style={styles.customerName}>{order.customer?.full_name}</Text>
-                      <Text style={styles.itemCount}>{order.items?.length ?? 0} items</Text>
+                      <Text style={styles.itemCount}>
+                        {order.restaurant?.name ? `${order.restaurant.name} · ` : ''}{order.items?.length ?? 0} items
+                      </Text>
                     </View>
                     <View style={styles.orderRight}>
                       <Text style={styles.orderTotal}>${order.total_amount.toFixed(2)}</Text>
@@ -188,6 +204,13 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.surface,
     alignItems: 'center', justifyContent: 'center',
   },
+  pendingBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: '#fef3c7', marginHorizontal: 16, borderRadius: 14, padding: 14, marginBottom: 8,
+    borderWidth: 1, borderColor: '#fde68a',
+  },
+  pendingTitle: { fontSize: 14, fontWeight: '800', color: '#92400e' },
+  pendingText: { fontSize: 12, color: '#92400e', marginTop: 2, lineHeight: 16 },
   createRestaurantCard: {
     margin: 20, backgroundColor: Colors.white, borderRadius: 20, padding: 40,
     alignItems: 'center', gap: 10,
