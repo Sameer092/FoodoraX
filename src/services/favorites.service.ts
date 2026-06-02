@@ -7,7 +7,7 @@ export const favoritesService = {
       .from('favorites')
       .select(`
         *,
-        restaurant:restaurants(id, name, logo_url, avg_rating, delivery_time, cuisine_type),
+        restaurant:restaurants(*, images:restaurant_images(url, is_primary)),
         menu_item:menu_items(id, name, price, image_url)
       `)
       .eq('user_id', userId)

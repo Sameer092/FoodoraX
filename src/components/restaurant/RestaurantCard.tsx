@@ -36,6 +36,11 @@ export function RestaurantCard({
     restaurant.cover_url ??
     restaurant.logo_url;
 
+  // Safe defaults — favorites/partial queries may omit some numeric fields
+  const avgRating = restaurant.avg_rating ?? 0;
+  const deliveryFee = restaurant.delivery_fee ?? 0;
+  const deliveryTime = restaurant.delivery_time ?? 0;
+
   if (variant === 'horizontal') {
     return (
       <AnimatedTouchable
@@ -59,16 +64,16 @@ export function RestaurantCard({
           <View style={styles.metaRow}>
             <View style={styles.metaItem}>
               <Ionicons name="star" size={12} color="#FBBF24" />
-              <Text style={styles.metaText}>{restaurant.avg_rating.toFixed(1)}</Text>
+              <Text style={styles.metaText}>{avgRating.toFixed(1)}</Text>
             </View>
             <Text style={styles.dot}>·</Text>
             <View style={styles.metaItem}>
               <Ionicons name="time-outline" size={12} color={Colors.light.textSecondary} />
-              <Text style={styles.metaText}>{restaurant.delivery_time} min</Text>
+              <Text style={styles.metaText}>{deliveryTime} min</Text>
             </View>
             <Text style={styles.dot}>·</Text>
             <Text style={styles.metaText}>
-              {restaurant.delivery_fee === 0 ? 'Free delivery' : `$${restaurant.delivery_fee.toFixed(2)}`}
+              {deliveryFee === 0 ? 'Free delivery' : `$${deliveryFee.toFixed(2)}`}
             </Text>
           </View>
         </View>
@@ -117,7 +122,7 @@ export function RestaurantCard({
         )}
         <View style={styles.ratingBadge}>
           <Ionicons name="star" size={11} color="#FBBF24" />
-          <Text style={styles.ratingText}>{restaurant.avg_rating.toFixed(1)}</Text>
+          <Text style={styles.ratingText}>{avgRating.toFixed(1)}</Text>
         </View>
       </View>
 
@@ -127,11 +132,11 @@ export function RestaurantCard({
         <View style={styles.metaRow}>
           <View style={styles.metaItem}>
             <Ionicons name="time-outline" size={12} color={Colors.light.textSecondary} />
-            <Text style={styles.metaText}>{restaurant.delivery_time} min</Text>
+            <Text style={styles.metaText}>{deliveryTime} min</Text>
           </View>
           <Text style={styles.dot}>·</Text>
-          <Text style={[styles.metaText, restaurant.delivery_fee === 0 && styles.freeText]}>
-            {restaurant.delivery_fee === 0 ? 'Free delivery' : `$${restaurant.delivery_fee.toFixed(2)}`}
+          <Text style={[styles.metaText, deliveryFee === 0 && styles.freeText]}>
+            {deliveryFee === 0 ? 'Free delivery' : `$${deliveryFee.toFixed(2)}`}
           </Text>
         </View>
       </View>

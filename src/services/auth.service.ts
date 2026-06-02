@@ -47,7 +47,7 @@ export const authService = {
       await authService.ensureProfile(data.user.id, { email, full_name, phone, role });
 
       if (role === 'restaurant_owner' && restaurant) {
-        await supabase.from('restaurants').insert({
+        const { data: created } = await supabase.from('restaurants').insert({
           owner_id: data.user.id,
           name: restaurant.restaurant_name,
           cuisine_type: restaurant.cuisine_type.split(',').map((c) => c.trim()).filter(Boolean),
@@ -55,7 +55,17 @@ export const authService = {
           city: restaurant.city,
           is_open: true,
           is_verified: false, // pending admin approval
-        });
+        }).select().single();
+
+        // Create a default menu category so the owner can immediately add items
+        // and they display correctly on the customer side.
+        if (created) {
+          await supabase.from('menu_categories').insert({
+            restaurant_id: created.id,
+            name: 'Main Menu',
+            sort_order: 0,
+          });
+        }
       }
 
       if (role === 'rider' && rider) {
