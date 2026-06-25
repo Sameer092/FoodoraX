@@ -1,17 +1,19 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker } from 'react-native-maps';
-// PROVIDER_GOOGLE removed — using default provider (free, no API key needed for dev)
 import { useOrderWithRealtime, useUpdateOrderStatus } from '@hooks/useOrders';
 import { useRiderLocationTracking } from '@hooks/useLocation';
+import { locationService } from '@services/location.service';
 import { useAuthStore } from '@store/auth.store';
 import { useAppStore } from '@store/app.store';
+import { OSMMap, OSMMapHandle, MapMarker } from '@components/map/OSMMap';
 import { OrderStatusBadge } from '@components/order/OrderStatusBadge';
 import { Button } from '@components/common/Button';
 import { Colors } from '@constants/colors';
+import { DEFAULT_REGION } from '@constants/config';
+import type { Coordinates } from '@types/index';
 
 export function ActiveDeliveryScreen() {
   const navigation = useNavigation<any>();
@@ -21,7 +23,26 @@ export function ActiveDeliveryScreen() {
   const { currentLocation } = useAppStore();
   const { data: order } = useOrderWithRealtime(orderId);
   const updateStatus = useUpdateOrderStatus();
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<OSMMapHandle>(null);
+  const [routeCoords, setRouteCoords] = useState<Coordinates[]>([]);
+
+  const restaurant = order?.restaurant?.latitude
+    ? { latitude: order.restaurant.latitude!, longitude: order.restaurant.longitude! }
+    : null;
+  const destination = order?.delivery_address?.latitude
+    ? { latitude: order.delivery_address.latitude!, longitude: order.delivery_address.longitude! }
+    : null;
+
+  useEffect(() => {
+    if (!restaurant || !destination) return;
+    let mounted = true;
+    locationService.getRoute(restaurant, destination).then((coords) => {
+      if (!mounted) return;
+      setRouteCoords(coords);
+      setTimeout(() => mapRef.current?.fitToCoordinates([restaurant, destination]), 300);
+    });
+    return () => { mounted = false; };
+  }, [restaurant?.latitude, restaurant?.longitude, destination?.latitude, destination?.longitude]);
 
   useRiderLocationTracking(user?.id, true);
 
@@ -55,32 +76,22 @@ export function ActiveDeliveryScreen() {
     Linking.openURL(url);
   };
 
+  const markers: MapMarker[] = [];
+  if (restaurant) markers.push({ lat: restaurant.latitude, lng: restaurant.longitude, type: 'restaurant', emoji: '🍴' });
+  if (destination) markers.push({ lat: destination.latitude, lng: destination.longitude, type: 'customer' });
+
+  const mapCenter: Coordinates = restaurant ?? destination ?? currentLocation ?? DEFAULT_REGION;
+
   return (
     <View style={styles.container}>
-      <MapView
+      <OSMMap
         ref={mapRef}
         style={styles.map}
-        initialRegion={{
-          latitude: order?.delivery_address?.latitude ?? order?.restaurant?.latitude ?? currentLocation?.latitude ?? 24.8607,
-          longitude: order?.delivery_address?.longitude ?? order?.restaurant?.longitude ?? currentLocation?.longitude ?? 67.0011,
-          latitudeDelta: 0.08, longitudeDelta: 0.08,
-        }}
-      >
-        {order?.restaurant?.latitude && (
-          <Marker coordinate={{ latitude: order.restaurant.latitude, longitude: order.restaurant.longitude }}>
-            <View style={styles.restaurantPin}>
-              <Text style={{ fontSize: 18 }}>🍴</Text>
-            </View>
-          </Marker>
-        )}
-        {order?.delivery_address?.latitude && (
-          <Marker coordinate={{ latitude: order.delivery_address.latitude, longitude: order.delivery_address.longitude }}>
-            <View style={styles.customerPin}>
-              <Ionicons name="location" size={18} color={Colors.white} />
-            </View>
-          </Marker>
-        )}
-      </MapView>
+        center={mapCenter}
+        zoom={13}
+        markers={markers}
+        polyline={routeCoords}
+      />
 
       {/* Back */}
       <SafeAreaView style={styles.backWrapper} edges={['top']}>

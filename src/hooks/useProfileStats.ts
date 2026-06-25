@@ -39,10 +39,10 @@ export function useProfileStats() {
       if (user.role === 'rider') {
         const [{ data: rider }, { data: delivered }] = await Promise.all([
           supabase.from('riders').select('avg_rating').eq('id', user.id).maybeSingle(),
-          supabase.from('orders').select('delivery_fee').eq('rider_id', user.id).eq('status', 'delivered'),
+          supabase.from('orders').select('rider_payout').eq('rider_id', user.id).eq('status', 'delivered'),
         ]);
-        const rows = (delivered ?? []) as { delivery_fee: number }[];
-        const earnings = rows.reduce((sum, o) => sum + Number(o.delivery_fee ?? 0), 0);
+        const rows = (delivered ?? []) as { rider_payout: number }[];
+        const earnings = rows.reduce((sum, o) => sum + Number(o.rider_payout ?? 0), 0);
         return [
           { label: 'Deliveries', value: String(rows.length) },
           { label: 'Earnings', value: `$${earnings.toFixed(0)}` },

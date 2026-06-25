@@ -1,3 +1,10 @@
+// Default map region — San Francisco, matching the iOS Simulator's fake GPS
+// and the demo restaurant locations, so maps look correct while testing.
+export const DEFAULT_REGION = {
+  latitude: 37.7749,
+  longitude: -122.4194,
+};
+
 export const Config = {
   supabase: {
     url: process.env.EXPO_PUBLIC_SUPABASE_URL ?? 'https://your-project.supabase.co',

@@ -3,17 +3,17 @@ import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Linking, Animated
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker, Polyline } from 'react-native-maps';
-// PROVIDER_GOOGLE removed — using default provider (free, no API key needed for dev)
 import { Image } from 'expo-image';
 import { useOrderWithRealtime } from '@hooks/useOrders';
 import { useOrderReview } from '@hooks/useRestaurants';
 import { locationService } from '@services/location.service';
 import { supabase } from '@services/supabase';
 import { useAppStore } from '@store/app.store';
+import { OSMMap, OSMMapHandle, MapMarker } from '@components/map/OSMMap';
 import { OrderStatusBadge } from '@components/order/OrderStatusBadge';
 import { Colors } from '@constants/colors';
-import type { RiderLocation, OrderStatus } from '@types/index';
+import { DEFAULT_REGION } from '@constants/config';
+import type { RiderLocation, OrderStatus, Coordinates } from '@types/index';
 
 const { width, height } = Dimensions.get('window');
 
@@ -36,35 +36,45 @@ export function OrderTrackingScreen() {
   const { data: existingReview } = useOrderReview(orderId);
   const { currentLocation } = useAppStore();
   const [riderLocation, setRiderLocation] = useState<RiderLocation | null>(null);
-  const mapRef = useRef<MapView>(null);
+  const [routeCoords, setRouteCoords] = useState<Coordinates[]>([]);
+  const mapRef = useRef<OSMMapHandle>(null);
 
-  // Center the map on the delivery location (your real address) once it loads
-  useEffect(() => {
-    const dest = order?.delivery_address;
-    if (dest?.latitude && dest?.longitude) {
-      mapRef.current?.animateToRegion({
-        latitude: dest.latitude, longitude: dest.longitude,
-        latitudeDelta: 0.04, longitudeDelta: 0.04,
-      });
-    }
-  }, [order?.delivery_address?.latitude, order?.delivery_address?.longitude]);
+  const restaurant = order?.restaurant?.latitude
+    ? { latitude: order.restaurant.latitude!, longitude: order.restaurant.longitude! }
+    : null;
+  const destination = order?.delivery_address?.latitude
+    ? { latitude: order.delivery_address.latitude!, longitude: order.delivery_address.longitude! }
+    : null;
 
+  // Subscribe to live rider location
   useEffect(() => {
     if (!order?.rider_id) return;
-    const initial = async () => {
-      const loc = await locationService.getRiderLocation(order.rider_id!);
-      setRiderLocation(loc);
-    };
-    initial();
+    locationService.getRiderLocation(order.rider_id).then(setRiderLocation);
     const channel = locationService.subscribeToRiderLocation(order.rider_id, (loc) => {
       setRiderLocation(loc);
-      mapRef.current?.animateToRegion({
-        latitude: loc.latitude, longitude: loc.longitude,
-        latitudeDelta: 0.02, longitudeDelta: 0.02,
-      });
+      mapRef.current?.animateToRegion({ latitude: loc.latitude, longitude: loc.longitude });
     });
     return () => { supabase.removeChannel(channel); };
   }, [order?.rider_id]);
+
+  // Build a real road route (restaurant → customer) and fit the map to it
+  useEffect(() => {
+    if (!restaurant || !destination) return;
+    let mounted = true;
+    locationService.getRoute(restaurant, destination).then((coords) => {
+      if (!mounted) return;
+      setRouteCoords(coords);
+      setTimeout(() => mapRef.current?.fitToCoordinates([restaurant, destination]), 300);
+    });
+    return () => { mounted = false; };
+  }, [restaurant?.latitude, restaurant?.longitude, destination?.latitude, destination?.longitude]);
+
+  const markers: MapMarker[] = [];
+  if (restaurant) markers.push({ lat: restaurant.latitude, lng: restaurant.longitude, type: 'restaurant', emoji: '🍴' });
+  if (destination) markers.push({ lat: destination.latitude, lng: destination.longitude, type: 'customer' });
+  if (riderLocation) markers.push({ lat: riderLocation.latitude, lng: riderLocation.longitude, type: 'rider', emoji: '🏍️' });
+
+  const mapCenter: Coordinates = destination ?? restaurant ?? currentLocation ?? DEFAULT_REGION;
 
   const statusMsg = STATUS_MESSAGES[order?.status ?? 'pending'];
   const currentStep = STATUS_STEPS.indexOf(order?.status as OrderStatus ?? 'pending');
@@ -72,43 +82,14 @@ export function OrderTrackingScreen() {
   return (
     <View style={styles.container}>
       {/* Map */}
-      <MapView
+      <OSMMap
         ref={mapRef}
         style={styles.map}
-        initialRegion={{
-          latitude: order?.delivery_address?.latitude ?? riderLocation?.latitude ?? currentLocation?.latitude ?? 24.8607,
-          longitude: order?.delivery_address?.longitude ?? riderLocation?.longitude ?? currentLocation?.longitude ?? 67.0011,
-          latitudeDelta: 0.05, longitudeDelta: 0.05,
-        }}
-      >
-        {riderLocation && (
-          <Marker coordinate={{ latitude: riderLocation.latitude, longitude: riderLocation.longitude }}>
-            <View style={styles.riderMarker}>
-              <Text style={{ fontSize: 20 }}>🏍️</Text>
-            </View>
-          </Marker>
-        )}
-        {order?.delivery_address?.latitude && (
-          <Marker coordinate={{
-            latitude: order.delivery_address.latitude,
-            longitude: order.delivery_address.longitude,
-          }}>
-            <View style={styles.destMarker}>
-              <Ionicons name="location" size={20} color={Colors.white} />
-            </View>
-          </Marker>
-        )}
-        {order?.restaurant?.latitude && (
-          <Marker coordinate={{
-            latitude: order.restaurant.latitude,
-            longitude: order.restaurant.longitude,
-          }}>
-            <View style={styles.restaurantMarker}>
-              <Text style={{ fontSize: 16 }}>🍴</Text>
-            </View>
-          </Marker>
-        )}
-      </MapView>
+        center={mapCenter}
+        zoom={14}
+        markers={markers}
+        polyline={routeCoords}
+      />
 
       {/* Back button */}
       <SafeAreaView style={styles.backBtn} edges={['top']}>

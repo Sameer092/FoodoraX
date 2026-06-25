@@ -33,14 +33,14 @@ export function RiderDashboardScreen() {
     queryFn: async () => {
       const [{ data: rider }, { data: delivered }] = await Promise.all([
         supabase.from('riders').select('avg_rating').eq('id', user!.id).maybeSingle(),
-        supabase.from('orders').select('delivery_fee, delivered_at').eq('rider_id', user!.id).eq('status', 'delivered'),
+        supabase.from('orders').select('rider_payout, delivered_at').eq('rider_id', user!.id).eq('status', 'delivered'),
       ]);
-      const rows = (delivered ?? []) as { delivery_fee: number; delivered_at: string }[];
+      const rows = (delivered ?? []) as { rider_payout: number; delivered_at: string }[];
       const today = new Date().toDateString();
       const todayRows = rows.filter((o) => o.delivered_at && new Date(o.delivered_at).toDateString() === today);
       return {
         todayCount: todayRows.length,
-        todayEarnings: todayRows.reduce((s, o) => s + Number(o.delivery_fee ?? 0), 0),
+        todayEarnings: todayRows.reduce((s, o) => s + Number(o.rider_payout ?? 0), 0),
         rating: Number(rider?.avg_rating ?? 0),
       };
     },

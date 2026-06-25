@@ -20,7 +20,7 @@ export function EarningsScreen() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, order_number, delivery_fee, total_amount, delivered_at, status')
+        .select('id, order_number, rider_payout, total_amount, delivered_at, status')
         .eq('rider_id', user!.id)
         .eq('status', 'delivered')
         .order('delivered_at', { ascending: false });
@@ -32,11 +32,11 @@ export function EarningsScreen() {
 
   const stats = useMemo(() => {
     const all = orders ?? [];
-    const totalEarnings = all.reduce((sum, o) => sum + (o.delivery_fee ?? 0), 0);
+    const totalEarnings = all.reduce((sum, o) => sum + (o.rider_payout ?? 0), 0);
     const today = new Date().toDateString();
     const todayEarnings = all
       .filter((o) => o.delivered_at && new Date(o.delivered_at).toDateString() === today)
-      .reduce((sum, o) => sum + (o.delivery_fee ?? 0), 0);
+      .reduce((sum, o) => sum + (o.rider_payout ?? 0), 0);
     return { totalEarnings, todayEarnings, count: all.length };
   }, [orders]);
 
@@ -84,7 +84,7 @@ export function EarningsScreen() {
                 {item.delivered_at ? format(new Date(item.delivered_at), 'MMM d, h:mm a') : ''}
               </Text>
             </View>
-            <Text style={styles.earning}>+${item.delivery_fee?.toFixed(2)}</Text>
+            <Text style={styles.earning}>+${(item.rider_payout ?? 0).toFixed(2)}</Text>
           </View>
         )}
       />

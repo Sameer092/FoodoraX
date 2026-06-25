@@ -2,6 +2,14 @@ import * as Location from 'expo-location';
 import { supabase } from './supabase';
 import type { Coordinates, RiderLocation } from '@types/index';
 
+const NOMINATIM = 'https://nominatim.openstreetmap.org';
+const OSRM = 'https://router.project-osrm.org';
+
+export interface PlaceResult {
+  label: string;
+  point: Coordinates;
+}
+
 export const locationService = {
   async requestPermissions() {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -23,30 +31,78 @@ export const locationService = {
     };
   },
 
+  // Reverse-geocode (coordinates → readable address) via free Nominatim/OSM.
   async reverseGeocode(coords: Coordinates): Promise<string> {
-    const results = await Location.reverseGeocodeAsync(coords);
-    if (!results.length) return '';
-    const r = results[0];
-    return [r.streetNumber, r.street, r.district, r.city].filter(Boolean).join(', ');
+    try {
+      const url = `${NOMINATIM}/reverse?format=jsonv2&lat=${coords.latitude}&lon=${coords.longitude}&zoom=18&addressdetails=1&accept-language=en`;
+      const res = await fetch(url, { headers: { 'User-Agent': 'FoodoraX/1.0', Accept: 'application/json' } });
+      const data = await res.json();
+      const a = data.address ?? {};
+      const parts = [a.road, a.suburb ?? a.neighbourhood, a.city ?? a.town ?? a.village].filter(Boolean);
+      return parts.join(', ') || data.display_name || '';
+    } catch {
+      return '';
+    }
   },
 
   async reverseGeocodeDetailed(coords: Coordinates): Promise<{
     line1: string; city: string; postalCode: string;
   } | null> {
-    const results = await Location.reverseGeocodeAsync(coords);
-    if (!results.length) return null;
-    const r = results[0];
-    return {
-      line1: [r.streetNumber, r.street ?? r.name].filter(Boolean).join(' '),
-      city: r.city ?? r.subregion ?? r.region ?? '',
-      postalCode: r.postalCode ?? '',
-    };
+    try {
+      const url = `${NOMINATIM}/reverse?format=jsonv2&lat=${coords.latitude}&lon=${coords.longitude}&zoom=18&addressdetails=1&accept-language=en`;
+      const res = await fetch(url, { headers: { 'User-Agent': 'FoodoraX/1.0', Accept: 'application/json' } });
+      const data = await res.json();
+      const a = data.address ?? {};
+      return {
+        line1: [a.house_number, a.road ?? a.pedestrian ?? a.suburb].filter(Boolean).join(' '),
+        city: a.city ?? a.town ?? a.village ?? a.state ?? '',
+        postalCode: a.postcode ?? '',
+      };
+    } catch {
+      return null;
+    }
   },
 
   async geocodeAddress(address: string): Promise<Coordinates | null> {
-    const results = await Location.geocodeAsync(address);
-    if (!results.length) return null;
-    return { latitude: results[0].latitude, longitude: results[0].longitude };
+    const results = await locationService.searchPlaces(address, 1);
+    return results[0]?.point ?? null;
+  },
+
+  // Forward-geocode / address search (string → list of places) via Nominatim.
+  async searchPlaces(query: string, limit = 6, near?: Coordinates | null): Promise<PlaceResult[]> {
+    if (!query.trim()) return [];
+    try {
+      let url = `${NOMINATIM}/search?format=jsonv2&q=${encodeURIComponent(query)}&limit=${limit}&addressdetails=1&accept-language=en`;
+      if (near) {
+        const d = 0.6; // ~60km bias box
+        url += `&viewbox=${near.longitude - d},${near.latitude + d},${near.longitude + d},${near.latitude - d}&bounded=0`;
+      }
+      const res = await fetch(url, { headers: { 'User-Agent': 'FoodoraX/1.0', Accept: 'application/json' } });
+      const data = await res.json();
+      return (data as any[]).map((r) => ({
+        label: r.display_name as string,
+        point: { latitude: parseFloat(r.lat), longitude: parseFloat(r.lon) },
+      }));
+    } catch {
+      return [];
+    }
+  },
+
+  // Real road route between two points via OSRM (free, no key). Returns the
+  // polyline coordinates to draw on the map. Falls back to a straight line.
+  async getRoute(from: Coordinates, to: Coordinates): Promise<Coordinates[]> {
+    try {
+      const url = `${OSRM}/route/v1/driving/${from.longitude},${from.latitude};${to.longitude},${to.latitude}?overview=full&geometries=geojson`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const coords = data?.routes?.[0]?.geometry?.coordinates as [number, number][] | undefined;
+      if (coords?.length) {
+        return coords.map(([lon, lat]) => ({ latitude: lat, longitude: lon }));
+      }
+    } catch {
+      // fall through to straight line
+    }
+    return [from, to];
   },
 
   async updateRiderLocation(riderId: string, coords: Coordinates & { heading?: number; speed?: number }) {

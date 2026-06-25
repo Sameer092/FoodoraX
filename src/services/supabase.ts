@@ -1,4 +1,5 @@
 import 'react-native-url-polyfill/auto';
+import { AppState } from 'react-native';
 import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Config } from '@constants/config';
@@ -21,3 +22,16 @@ export const supabase = createClient(
     },
   }
 );
+
+// REQUIRED for React Native: tie token auto-refresh to app foreground state.
+// Without this the access token can expire while the app is open — then every
+// query silently returns empty rows (RLS rejects the stale token) until a
+// manual reload. Starting/stopping auto-refresh on AppState changes keeps the
+// session valid so data never "disappears".
+AppState.addEventListener('change', (state) => {
+  if (state === 'active') {
+    supabase.auth.startAutoRefresh();
+  } else {
+    supabase.auth.stopAutoRefresh();
+  }
+});

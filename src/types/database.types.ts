@@ -156,6 +156,7 @@ export interface Order {
   tax_amount: number;
   discount_amount: number;
   total_amount: number;
+  rider_payout?: number;
   promo_code?: string;
   payment_method?: PaymentMethodType;
   payment_status: PaymentStatus;
