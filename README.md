@@ -1,19 +1,52 @@
-# FoodoraX 🍕
+# 🍕 FoodoraX
 
-FoodoraX is a production-ready, full-stack food delivery mobile application built with React Native, Expo SDK, and Supabase — designed to showcase senior-level mobile engineering skills across the entire product lifecycle.
-It supports three distinct user roles — Customer, Restaurant Owner, and Delivery Rider — each with a fully dedicated experience including real-time order tracking, Stripe-powered payments, live GPS navigation, push notifications, and a modern glassmorphism UI inspired by Uber Eats and DoorDash.
-Built with scalability and clean architecture in mind, FoodoraX is suitable for a production launch or as a standout portfolio project demonstrating advanced React Native, TypeScript, and backend-as-a-service expertise.
+![Expo](https://img.shields.io/badge/Expo-SDK%2052-000020?logo=expo&logoColor=white)
+![React Native](https://img.shields.io/badge/React%20Native-0.76.9-61DAFB?logo=react&logoColor=black)
+![React](https://img.shields.io/badge/React-18.3.1-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
+
+> FoodoraX is a production-ready, full-stack food delivery app built with React Native, Expo, and Supabase.
+> It serves three distinct roles — Customer, Restaurant Owner, and Delivery Rider — each with a dedicated
+> experience: real-time order tracking, Stripe payments, live GPS navigation, push notifications, and a modern glassmorphism UI.
 
 ---
 
-## Tech Stack
+## 📖 Overview
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React Native + Expo SDK 51 |
-| Language | TypeScript (strict) |
+FoodoraX is built with scalability and clean architecture in mind, suitable for a production launch or as a standout portfolio project. The feature-based structure keeps each domain self-contained, server state flows through React Query with Supabase Realtime sync, and all data access is enforced at the database level via Row Level Security.
+
+---
+
+## ✨ Features
+
+### Customer
+- Browse & search restaurants with filters/sorting
+- Full cart system with promo codes
+- Stripe payment (Card, Apple Pay, Google Pay, Cash)
+- Real-time order tracking with rider GPS
+- Push notifications for every order milestone
+- Favorites + order history with reviews & ratings
+
+### Restaurant Owner
+- Dashboard with live order stats
+- Full menu management (categories, items, images)
+- Real-time order management with status updates
+
+### Delivery Rider
+- Go online/offline with GPS tracking
+- Accept available delivery orders
+- Turn-by-turn navigation + earnings dashboard
+
+---
+
+## 🧱 Tech Stack
+
+| Category | Technology |
+|---|---|
+| Framework | React Native 0.76.9 + Expo SDK 52 |
+| Language | TypeScript 5.x (strict) |
 | Navigation | React Navigation v6 |
-| State | Zustand + React Query v5 |
+| State | Zustand + TanStack Query v5 |
 | Forms | React Hook Form + Zod |
 | Styling | NativeWind (Tailwind CSS) |
 | Backend | Supabase (Postgres, Auth, Realtime, Storage) |
@@ -24,151 +57,84 @@ Built with scalability and clean architecture in mind, FoodoraX is suitable for 
 
 ---
 
-## Features
-
-### Customer
-- Browse & search restaurants with filters/sorting
-- Full cart system with promo codes
-- Stripe payment (Card, Apple Pay, Google Pay, Cash)
-- Real-time order tracking with rider GPS
-- Push notifications for every order milestone
-- Favorites (restaurants & menu items)
-- Order history with reviews & ratings
-
-### Restaurant Owner
-- Dashboard with live order stats
-- Full menu management (categories, items, images)
-- Real-time order management with status updates
-- Analytics overview
-
-### Delivery Rider
-- Go online/offline toggle with GPS tracking
-- Accept available delivery orders
-- Turn-by-turn navigation to restaurant & customer
-- Earnings dashboard
-
----
-
-## Project Structure
+## 🗂 Project Structure
 
 ```
-src/
-├── features/          # Feature-based modules
-│   ├── auth/          # Login, signup, forgot password
-│   ├── home/          # Home screen
-│   ├── restaurants/   # Restaurant list & detail
-│   ├── cart/          # Cart management
-│   ├── checkout/      # Checkout + payments
-│   ├── orders/        # Order tracking, history, reviews
-│   ├── favorites/     # Saved restaurants
-│   ├── notifications/ # Push notification inbox
-│   ├── profile/       # Profile, addresses, settings
-│   ├── restaurant-management/  # Owner dashboard
-│   └── rider/         # Rider dashboard
-├── navigation/        # Stack & tab navigators
-├── store/             # Zustand stores
-├── hooks/             # React Query hooks
-├── services/          # Supabase API layer
-├── components/        # Reusable UI components
-├── constants/         # Colors, theme, config
-├── types/             # TypeScript types
-└── utils/             # Helpers
+FoodoraX/
+├── app.json               # Expo config (plugins, maps keys, Stripe)
+├── index.ts / App.tsx      # Entry point & root providers
+├── supabase/
+│   ├── migrations/         # 001 schema · 002 RLS · 003 seed
+│   └── functions/          # create-payment-intent, send-notification
+└── src/
+    ├── features/           # auth, home, restaurants, cart, checkout, orders,
+    │                       #   favorites, notifications, profile, restaurant-management, rider
+    ├── navigation/         # stack & tab navigators
+    ├── store/              # Zustand stores
+    ├── hooks/              # React Query hooks
+    ├── services/           # Supabase API layer
+    ├── components/         # reusable UI
+    ├── constants/          # colors, theme, config
+    ├── types/              # TypeScript types
+    └── utils/              # helpers
 ```
 
 ---
 
-## Setup
+## 🚀 Getting Started
 
-### 1. Install dependencies
+### Prerequisites
+- Node.js 20+
+- A [Supabase](https://supabase.com) account
+- Google Maps API key
+- iOS Simulator / Android Emulator, or the Expo Go app
+
+### Installation & Run
 ```bash
+cd FoodoraX
 npm install
-```
-
-### 2. Configure environment
-```bash
-cp .env.example .env
-# Fill in your Supabase, Stripe, and Google Maps keys
-```
-
-### 3. Supabase Setup
-1. Create a Supabase project at [supabase.com](https://supabase.com)
-2. Run migrations in order:
-   ```sql
-   -- Run in Supabase SQL editor:
-   -- supabase/migrations/001_initial_schema.sql
-   -- supabase/migrations/002_rls_policies.sql
-   -- supabase/migrations/003_seed_data.sql
-   ```
-3. Enable providers in Auth → Providers: Email, Google, Apple
-4. Create storage buckets: `avatars`, `restaurants`, `menu-items`, `reviews`
-5. Deploy edge functions:
-   ```bash
-   supabase functions deploy create-payment-intent
-   supabase functions deploy send-notification
-   ```
-6. Set edge function secrets:
-   ```bash
-   supabase secrets set STRIPE_SECRET_KEY=sk_test_...
-   supabase secrets set STRIPE_PUBLISHABLE_KEY=pk_test_...
-   ```
-
-### 4. Google Maps
-- Get an API key from [Google Cloud Console](https://console.cloud.google.com)
-- Enable: Maps SDK (iOS & Android), Directions API, Geocoding API
-- Add to `app.json` and `.env`
-
-### 5. Start the app
-```bash
+cp .env.example .env        # fill in Supabase, Stripe, Google Maps keys
 npx expo start
 ```
 
 ---
 
-## Database Schema
+## ⚙️ Environment Variables
 
-The database uses PostgreSQL with full Row Level Security. Key tables:
+Copy `.env.example` → `.env` and provide your Supabase URL/anon key, Stripe publishable key, and Google Maps key. Edge-function secrets are set via the Supabase CLI:
 
-- `users` — all user accounts (customer, restaurant_owner, rider, admin)
-- `restaurants` — restaurant profiles with location
-- `menu_categories` + `menu_items` — full menu system
-- `carts` + `cart_items` — shopping cart
-- `orders` + `order_items` — order management
-- `payments` — Stripe payment records
-- `riders` + `rider_locations` — rider tracking
-- `reviews` + `favorites` + `notifications` — social features
+```bash
+supabase secrets set STRIPE_SECRET_KEY=sk_test_...
+supabase secrets set STRIPE_PUBLISHABLE_KEY=pk_test_...
+```
+
+> **Note:** `app.json` sets the Stripe plugin `merchantIdentifier` to a placeholder (`merchant.com.foodorax`). Replace it with your real Apple Pay merchant ID before a production build.
 
 ---
 
-## Deployment
+## 🗄 Supabase Setup
 
-### EAS Build (Expo Application Services)
+1. Create a project at [supabase.com](https://supabase.com).
+2. Run migrations in order: `001_initial_schema.sql` → `002_rls_policies.sql` → `003_seed_data.sql`.
+3. Enable providers in **Auth → Providers**: Email, Google, Apple.
+4. Create storage buckets: `avatars`, `restaurants`, `menu-items`, `reviews`.
+5. Deploy edge functions: `create-payment-intent`, `send-notification`.
+6. Enable a Google Maps API key (Maps SDK iOS/Android, Directions, Geocoding) and add it to `app.json` + `.env`.
+
+---
+
+## 📦 Deployment
+
 ```bash
 npm install -g eas-cli
 eas login
-eas build --platform ios
-eas build --platform android
+eas build --platform ios       # or: --platform android
 ```
 
-### Production Checklist
-- [ ] Replace all `YOUR_*_KEY` placeholders
-- [ ] Configure Apple/Google OAuth in Supabase
-- [ ] Set up Stripe webhooks for payment reconciliation
-- [ ] Configure production Stripe keys
-- [ ] Enable real-time replication for `orders` and `rider_locations` tables
-- [ ] Set up database backups in Supabase
-- [ ] Configure push notification certificates (APNs / FCM)
+**Production checklist:** replace all placeholder keys, configure OAuth in Supabase, set up Stripe webhooks + production keys, enable realtime replication for `orders` and `rider_locations`, set up DB backups, configure APNs/FCM push certificates.
 
 ---
 
-## Architecture Decisions
+## 📄 License
 
-- **Feature-based structure** — each feature owns its screens, making the codebase easy to navigate and scale
-- **React Query** — server state with caching, optimistic updates, and real-time sync via Supabase Realtime
-- **Zustand** — client state (cart, auth, app preferences) with persistence via AsyncStorage
-- **Row Level Security** — all data access is enforced at the database level, not just the API layer
-- **Payment abstraction** — the payment service layer can swap providers without touching UI code
-- **Reanimated v3** — all animations run on the UI thread for 60fps performance
-
----
-
-Built with ❤️ as a production-ready portfolio project.
+MIT — for portfolio/demo use.
