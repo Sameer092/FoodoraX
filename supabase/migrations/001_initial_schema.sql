@@ -4,8 +4,11 @@
 
 -- Enable required extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "postgis";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+-- NOTE: PostGIS is intentionally NOT used. All coordinates are plain DECIMAL
+-- columns and distance is computed via the haversine_km() SQL function.
+-- (Enabling PostGIS adds an unmanaged public.spatial_ref_sys table that trips
+--  the Security Advisor's "RLS disabled" check.)
 
 -- ============================================================
 -- ENUMS
