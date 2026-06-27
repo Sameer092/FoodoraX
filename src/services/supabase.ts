@@ -35,3 +35,7 @@ AppState.addEventListener('change', (state) => {
     supabase.auth.stopAutoRefresh();
   }
 });
+
+// The AppState listener only fires on a CHANGE — kick off auto-refresh now for
+// the initial cold-start (app is already "active" so the listener won't fire).
+supabase.auth.startAutoRefresh();

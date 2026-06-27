@@ -241,8 +241,8 @@ const styles = StyleSheet.create({
   heroName: { fontSize: 22, fontWeight: '800', color: Colors.white, marginBottom: 3 },
   heroCuisine: { fontSize: 13, color: 'rgba(255,255,255,0.8)' },
   infoStrip: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around',
-    backgroundColor: Colors.white, paddingVertical: 14,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: Colors.white, paddingVertical: 14, paddingHorizontal: 20,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: Colors.light.border,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06, shadowRadius: 6, elevation: 3,

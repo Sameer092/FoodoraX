@@ -71,6 +71,21 @@ export function OrderManagementScreen() {
     ]);
   };
 
+  const deliveryInfo = (order: Order) => {
+    const rider = order.rider?.full_name;
+    if (order.status === 'delivered') {
+      return { text: `Delivered${rider ? ` by ${rider}` : ''} ✓`, icon: 'checkmark-done', color: '#166534', bg: { backgroundColor: '#dcfce7' } };
+    }
+    if (order.status === 'picked_up') {
+      return { text: `Out for delivery${rider ? ` · ${rider}` : ''}`, icon: 'bicycle', color: '#0f766e', bg: { backgroundColor: '#ccfbf1' } };
+    }
+    // ready
+    if (order.rider_id) {
+      return { text: `${rider ?? 'A rider'} is on the way to pick up`, icon: 'bicycle', color: '#1e40af', bg: { backgroundColor: '#dbeafe' } };
+    }
+    return { text: 'Waiting for a rider to accept the delivery…', icon: 'time-outline', color: '#92400e', bg: { backgroundColor: '#fef3c7' } };
+  };
+
   const renderOrder = ({ item }: { item: Order }) => {
     const nextAction = NEXT_ACTIONS[item.status];
     return (
@@ -96,6 +111,16 @@ export function OrderManagementScreen() {
             <Text key={i.id} style={styles.itemText}>• {i.quantity}x {i.name}</Text>
           ))}
         </View>
+
+        {/* Delivery status — once the food is ready, show what the rider is doing */}
+        {['ready', 'picked_up', 'delivered'].includes(item.status) && (
+          <View style={[styles.deliveryBanner, deliveryInfo(item).bg]}>
+            <Ionicons name={deliveryInfo(item).icon as any} size={16} color={deliveryInfo(item).color} />
+            <Text style={[styles.deliveryText, { color: deliveryInfo(item).color }]}>
+              {deliveryInfo(item).text}
+            </Text>
+          </View>
+        )}
 
         {/* Actions */}
         {nextAction && (
@@ -195,6 +220,11 @@ const styles = StyleSheet.create({
   total: { fontSize: 18, fontWeight: '800', color: Colors.dark[900] },
   items: { marginBottom: 14 },
   itemText: { fontSize: 13, color: Colors.dark[600], marginBottom: 3 },
+  deliveryBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12,
+  },
+  deliveryText: { fontSize: 13, fontWeight: '600', flex: 1 },
   actions: { flexDirection: 'row', gap: 8 },
   cancelBtn: {
     paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10,

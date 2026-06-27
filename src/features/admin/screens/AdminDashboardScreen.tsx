@@ -19,13 +19,15 @@ export function AdminDashboardScreen() {
     refetchInterval: 30 * 1000,
   });
 
+  // Order metrics are tappable (no equivalent in the Management list below).
+  // Entity counts are display-only — the Management list handles navigation.
   const statCards = [
-    { label: 'GMV', value: `$${(stats?.gmv ?? 0).toFixed(0)}`, icon: 'cash', color: Colors.status.success, bg: '#dcfce7' },
-    { label: 'Total Orders', value: String(stats?.totalOrders ?? 0), icon: 'receipt', color: Colors.status.info, bg: '#dbeafe' },
+    { label: 'GMV', value: `$${(stats?.gmv ?? 0).toFixed(0)}`, icon: 'cash', color: Colors.status.success, bg: '#dcfce7', route: 'AdminOrders' },
+    { label: `Revenue (${stats?.commissionPct ?? 15}%)`, value: `$${(stats?.revenue ?? 0).toFixed(0)}`, icon: 'trending-up', color: Colors.primary[600], bg: Colors.primary[50], route: 'AdminOrders' },
+    { label: 'Total Orders', value: String(stats?.totalOrders ?? 0), icon: 'receipt', color: Colors.status.info, bg: '#dbeafe', route: 'AdminOrders' },
     { label: 'Restaurants', value: String(stats?.totalRestaurants ?? 0), icon: 'storefront', color: Colors.primary[600], bg: Colors.primary[50] },
     { label: 'Riders', value: String(stats?.totalRiders ?? 0), icon: 'bicycle', color: '#7c3aed', bg: '#ede9fe' },
     { label: 'Users', value: String(stats?.totalUsers ?? 0), icon: 'people', color: '#0891b2', bg: '#cffafe' },
-    { label: 'Pending', value: String((stats?.pendingRestaurants ?? 0) + (stats?.pendingRiders ?? 0)), icon: 'hourglass', color: Colors.status.warning, bg: '#fef3c7' },
   ];
 
   const sections = [
@@ -55,15 +57,31 @@ export function AdminDashboardScreen() {
         </View>
 
         <View style={styles.grid}>
-          {statCards.map((c) => (
-            <View key={c.label} style={styles.statCard}>
-              <View style={[styles.statIcon, { backgroundColor: c.bg }]}>
-                <Ionicons name={c.icon as any} size={18} color={c.color} />
+          {statCards.map((c) => {
+            const content = (
+              <>
+                <View style={[styles.statIcon, { backgroundColor: c.bg }]}>
+                  <Ionicons name={c.icon as any} size={18} color={c.color} />
+                </View>
+                <Text style={styles.statValue}>{c.value}</Text>
+                <Text style={styles.statLabel}>{c.label}</Text>
+              </>
+            );
+            return c.route ? (
+              <TouchableOpacity
+                key={c.label}
+                style={styles.statCard}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate(c.route!)}
+              >
+                {content}
+              </TouchableOpacity>
+            ) : (
+              <View key={c.label} style={styles.statCard}>
+                {content}
               </View>
-              <Text style={styles.statValue}>{c.value}</Text>
-              <Text style={styles.statLabel}>{c.label}</Text>
-            </View>
-          ))}
+            );
+          })}
         </View>
 
         <Text style={styles.sectionTitle}>Management</Text>

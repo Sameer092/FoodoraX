@@ -43,27 +43,26 @@ export function useAuth() {
       }
       // 1) Route instantly from session metadata (flips isLoading off immediately)
       setUser(userFromSession(session));
-      // 2) Refine with the real DB profile in the background
+      // 2) Confirm the session works by fetching the real profile, then refetch
+      //    all data. A successful fetch proves the token is valid, so any query
+      //    that returned empty before the token was ready will reload with auth.
       try {
         const fresh = await authService.getCurrentUser();
         if (mounted && fresh) setUser(fresh);
+        if (mounted) queryClient.invalidateQueries(); // refetch all data with valid token
       } catch {
         // keep the session-derived user
       }
     };
 
-    // React to all auth events — INITIAL_SESSION fires once on startup.
+    // React to all auth events — INITIAL_SESSION fires once on startup (cold start
+    // with a saved session), SIGNED_IN on login, TOKEN_REFRESHED on renewal.
     const { data: { subscription } } = authService.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
       if (event === 'SIGNED_OUT') {
         logout();
       } else {
-        await resolve(session); // INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED, USER_UPDATED
-        // When the token (re)appears, refetch data so RLS-backed queries that
-        // may have returned empty with a stale token reload with valid auth.
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          queryClient.invalidateQueries();
-        }
+        await resolve(session);
       }
     });
 

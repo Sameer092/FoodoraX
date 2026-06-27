@@ -141,6 +141,7 @@ export function HomeScreen() {
         onScroll={scrollHandler}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
+        style={styles.scrollBody}
         contentContainerStyle={styles.scroll}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary[500]} />
@@ -237,19 +238,21 @@ export function HomeScreen() {
               <Text style={styles.seeAll}>See all</Text>
             </TouchableOpacity>
           </View>
-          {loadingAll
-            ? Array.from({ length: 3 }).map((_, i) => <RestaurantCardSkeleton key={i} />)
-            : allRestaurants.map((r) => (
-              <RestaurantCard
-                key={r.id}
-                restaurant={r}
-                variant="horizontal"
-                onPress={() => navigation.navigate('RestaurantDetail', { restaurantId: r.id })}
-                onFavorite={() => toggleFavorite.mutate(r.id)}
-                isFavorite={favoriteIds.has(r.id)}
-              />
-            ))
-          }
+          <View style={styles.nearbyList}>
+            {loadingAll
+              ? Array.from({ length: 3 }).map((_, i) => <RestaurantCardSkeleton key={i} />)
+              : allRestaurants.map((r) => (
+                <RestaurantCard
+                  key={r.id}
+                  restaurant={r}
+                  variant="horizontal"
+                  onPress={() => navigation.navigate('RestaurantDetail', { restaurantId: r.id })}
+                  onFavorite={() => toggleFavorite.mutate(r.id)}
+                  isFavorite={favoriteIds.has(r.id)}
+                />
+              ))
+            }
+          </View>
         </View>
 
         <View style={{ height: 100 }} />
@@ -259,7 +262,7 @@ export function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F8F9FA' },
+  safe: { flex: 1, backgroundColor: Colors.white },
   header: {
     backgroundColor: Colors.white,
     paddingHorizontal: 20,
@@ -301,7 +304,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary[50],
     alignItems: 'center', justifyContent: 'center',
   },
-  scroll: { paddingTop: 8 },
+  // Scroll view bg is WHITE so the top overscroll bounce blends with the white
+  // header; the content container carries the gray page background.
+  scrollBody: { flex: 1, backgroundColor: Colors.white },
+  scroll: { paddingTop: 8, flexGrow: 1, backgroundColor: '#F8F9FA' },
+  nearbyList: { paddingHorizontal: 20 },
   activeOrderBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: Colors.dark[900], marginHorizontal: 20, marginTop: 12,

@@ -74,6 +74,7 @@ export type AdminStackParamList = {
   ManageRiders: undefined;
   ManageUsers: undefined;
   PlatformSettings: undefined;
+  AdminOrders: undefined;
 };
 
 // ─── Root Stack ────────────────────────────────────────────────

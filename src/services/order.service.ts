@@ -101,6 +101,7 @@ export const orderService = {
       .select(`
         *,
         customer:users!orders_customer_id_fkey(id, full_name, phone),
+        rider:users!orders_rider_id_fkey(id, full_name, phone),
         items:order_items(id, name, quantity)
       `)
       .eq('restaurant_id', restaurantId)
@@ -120,6 +121,7 @@ export const orderService = {
       .select(`
         *,
         customer:users!orders_customer_id_fkey(id, full_name, phone),
+        rider:users!orders_rider_id_fkey(id, full_name, phone),
         restaurant:restaurants(id, name, logo_url),
         items:order_items(id, name, quantity)
       `)

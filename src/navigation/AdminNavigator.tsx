@@ -6,6 +6,7 @@ import { ManageRestaurantsScreen } from '@features/admin/screens/ManageRestauran
 import { ManageRidersScreen } from '@features/admin/screens/ManageRidersScreen';
 import { ManageUsersScreen } from '@features/admin/screens/ManageUsersScreen';
 import { PlatformSettingsScreen } from '@features/admin/screens/PlatformSettingsScreen';
+import { AdminOrdersScreen } from '@features/admin/screens/AdminOrdersScreen';
 
 const Stack = createNativeStackNavigator<AdminStackParamList>();
 
@@ -17,6 +18,7 @@ export function AdminNavigator() {
       <Stack.Screen name="ManageRiders" component={ManageRidersScreen} />
       <Stack.Screen name="ManageUsers" component={ManageUsersScreen} />
       <Stack.Screen name="PlatformSettings" component={PlatformSettingsScreen} />
+      <Stack.Screen name="AdminOrders" component={AdminOrdersScreen} />
     </Stack.Navigator>
   );
 }
