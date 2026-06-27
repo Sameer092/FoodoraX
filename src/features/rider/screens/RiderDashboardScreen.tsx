@@ -10,6 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@store/auth.store';
 import { useAvailableDeliveries, useAcceptDelivery, useRiderActiveDelivery } from '@hooks/useOrders';
 import { useRiderLocationTracking } from '@hooks/useLocation';
+import { locationService } from '@services/location.service';
 import { supabase } from '@services/supabase';
 import { OrderStatusBadge } from '@components/order/OrderStatusBadge';
 import { EmptyState } from '@components/common/EmptyState';
@@ -24,6 +25,18 @@ export function RiderDashboardScreen() {
   const { data: activeDelivery } = useRiderActiveDelivery();
   const { data: availableDeliveries, isLoading } = useAvailableDeliveries();
   const acceptDelivery = useAcceptDelivery();
+
+  // Verification status — riders must be approved by an admin before delivering
+  const { data: riderProfile } = useQuery({
+    queryKey: ['rider', 'verification', user?.id],
+    enabled: !!user,
+    refetchInterval: 20 * 1000,
+    queryFn: async () => {
+      const { data } = await supabase.from('riders').select('is_verified').eq('id', user!.id).maybeSingle();
+      return data as { is_verified: boolean } | null;
+    },
+  });
+  const isVerified = riderProfile?.is_verified ?? false;
 
   // Real rider stats
   const { data: stats } = useQuery({
@@ -45,6 +58,38 @@ export function RiderDashboardScreen() {
       };
     },
   });
+
+  // Platform pay rates — used to estimate each delivery's payout for the rider
+  const { data: payRates } = useQuery({
+    queryKey: ['platform', 'pay-rates'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('platform_settings')
+        .select('rider_base_pay, rider_per_km')
+        .eq('id', 1)
+        .maybeSingle();
+      return data as { rider_base_pay: number; rider_per_km: number } | null;
+    },
+  });
+
+  // Estimate what the rider will earn for a delivery (base + capped distance × rate)
+  const estimatePayout = (order: Order) => {
+    const base = Number(payRates?.rider_base_pay ?? 2);
+    const perKm = Number(payRates?.rider_per_km ?? 0.5);
+    const r = order.restaurant;
+    const d = order.delivery_address;
+    let km = 0;
+    if (r?.latitude && r?.longitude && d?.latitude && d?.longitude) {
+      km = Math.min(
+        locationService.calculateDistance(
+          { latitude: r.latitude, longitude: r.longitude },
+          { latitude: d.latitude, longitude: d.longitude },
+        ),
+        30,
+      );
+    }
+    return base + perKm * km;
+  };
 
   useRiderLocationTracking(user?.id, isOnline);
 
@@ -78,7 +123,7 @@ export function RiderDashboardScreen() {
           <Text style={styles.restaurantAddr} numberOfLines={1}>{item.restaurant?.address}</Text>
         </View>
         <View style={styles.earningBadge}>
-          <Text style={styles.earningText}>${item.delivery_fee?.toFixed(2)}</Text>
+          <Text style={styles.earningText}>${estimatePayout(item).toFixed(2)}</Text>
           <Text style={styles.earningLabel}>Earn</Text>
         </View>
       </View>
@@ -135,22 +180,34 @@ export function RiderDashboardScreen() {
         </View>
       </View>
 
-      {/* Online toggle pill */}
-      <View style={styles.togglePill}>
-        <View style={styles.toggleInfo}>
-          <View style={[styles.statusDot, { backgroundColor: isOnline ? Colors.status.success : Colors.light.textTertiary }]} />
-          <View>
-            <Text style={styles.toggleTitle}>{isOnline ? "You're Online" : "You're Offline"}</Text>
-            <Text style={styles.toggleSub}>{isOnline ? 'Receiving delivery requests' : 'Go online to receive requests'}</Text>
+      {/* Pending approval banner (unverified) OR online toggle (verified) */}
+      {!isVerified ? (
+        <View style={styles.pendingBanner}>
+          <Ionicons name="hourglass-outline" size={22} color="#92400e" />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.pendingTitle}>Verification Pending</Text>
+            <Text style={styles.pendingText}>
+              An admin needs to approve your rider profile before you can start delivering. You'll be able to go online once you're verified.
+            </Text>
           </View>
         </View>
-        <Switch
-          value={isOnline}
-          onValueChange={toggleOnline}
-          trackColor={{ false: Colors.light.border, true: Colors.status.success }}
-          thumbColor={Colors.white}
-        />
-      </View>
+      ) : (
+        <View style={styles.togglePill}>
+          <View style={styles.toggleInfo}>
+            <View style={[styles.statusDot, { backgroundColor: isOnline ? Colors.status.success : Colors.light.textTertiary }]} />
+            <View>
+              <Text style={styles.toggleTitle}>{isOnline ? "You're Online" : "You're Offline"}</Text>
+              <Text style={styles.toggleSub}>{isOnline ? 'Receiving delivery requests' : 'Go online to receive requests'}</Text>
+            </View>
+          </View>
+          <Switch
+            value={isOnline}
+            onValueChange={toggleOnline}
+            trackColor={{ false: Colors.light.border, true: Colors.status.success }}
+            thumbColor={Colors.white}
+          />
+        </View>
+      )}
 
       {/* Stats */}
       <View style={styles.stats}>
@@ -192,7 +249,13 @@ export function RiderDashboardScreen() {
         <Text style={styles.count}>{availableDeliveries?.length ?? 0} nearby</Text>
       </View>
 
-      {!isOnline ? (
+      {!isVerified ? (
+        <EmptyState
+          icon="shield-checkmark-outline"
+          title="Awaiting verification"
+          description="Once an admin approves your profile, available deliveries will show up here."
+        />
+      ) : !isOnline ? (
         <EmptyState
           icon="bicycle-outline"
           title="You're offline"
@@ -231,6 +294,13 @@ const styles = StyleSheet.create({
     width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.light.surface,
     alignItems: 'center', justifyContent: 'center',
   },
+  pendingBanner: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 12,
+    backgroundColor: '#fef3c7', marginHorizontal: 16, marginTop: 4, marginBottom: 8,
+    borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#fde68a',
+  },
+  pendingTitle: { fontSize: 15, fontWeight: '800', color: '#92400e' },
+  pendingText: { fontSize: 12, color: '#92400e', marginTop: 3, lineHeight: 17 },
   togglePill: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     backgroundColor: Colors.white, marginHorizontal: 16, marginTop: 4, marginBottom: 8,
