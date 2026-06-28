@@ -3,6 +3,7 @@
     "name": "FoodoraX",
     "slug": "foodorax",
     "version": "1.0.0",
+    "newArchEnabled": true,
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -72,13 +73,6 @@
         }
       ],
       "expo-secure-store",
-      [
-        "@stripe/stripe-react-native",
-        {
-          "merchantIdentifier": "merchant.com.foodorax",
-          "enableGooglePay": true
-        }
-      ],
       "expo-asset"
     ],
     "scheme": "foodorax"

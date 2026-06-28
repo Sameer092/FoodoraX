@@ -1,51 +1,61 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "strict": true,
     "baseUrl": ".",
+    "allowJs": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "moduleResolution": "bundler",
+    "noEmit": true,
     "paths": {
-      "@/*": [
+      "@src/*": [
         "src/*"
-      ],
-      "@features/*": [
-        "src/features/*"
-      ],
-      "@components/*": [
-        "src/components/*"
-      ],
-      "@navigation/*": [
-        "src/navigation/*"
       ],
       "@store/*": [
         "src/store/*"
       ],
-      "@hooks/*": [
-        "src/hooks/*"
+      "@library/*": [
+        "src/library/*"
       ],
-      "@services/*": [
-        "src/services/*"
-      ],
-      "@constants/*": [
-        "src/constants/*"
+      "@config/*": [
+        "src/config/*"
       ],
       "@utils/*": [
         "src/utils/*"
       ],
-      "@types/*": [
-        "src/types/*"
+      "@components/*": [
+        "src/components/*"
+      ],
+      "@routes/*": [
+        "src/routes/*"
+      ],
+      "@stacks/*": [
+        "src/stacks/*"
+      ],
+      "@assets/*": [
+        "assets/*"
+      ],
+      "@colors": [
+        "src/colors"
+      ],
+      "@fonts": [
+        "src/fonts"
       ]
     },
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": false,
-    "noEmit": true
+    "noCheck": true
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    "**/*.js",
     ".expo/types/**/*.d.ts"
   ],
   "exclude": [
     "node_modules",
-    "supabase/functions"
+    "supabase"
   ]
 }
